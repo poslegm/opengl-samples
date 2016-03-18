@@ -20,7 +20,10 @@ class Cube:
             (-coord, -coord, coord), (-coord, coord, coord)
         )
 
-    def draw(self, fill, scale=1.0, angle_x=0, angle_y=0):
+    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0):
+        self.__center[0] += shift[0]
+        self.__center[1] += shift[1]
+
         glLoadIdentity()
         glPushMatrix()
 
@@ -50,20 +53,34 @@ def key_callback(window, key, scancode, action, mods):
     global rotate_x
     global rotate_y
     global scale
+    global shift
+
+    drotate = 5
+    dscale = 0.05
+    dshift = 0.03
+
     if key == glfw.KEY_F and action == glfw.PRESS:
         fill = not fill
     elif key == glfw.KEY_UP:
-        rotate_x -= 5
+        rotate_x -= drotate
     elif key == glfw.KEY_DOWN:
-        rotate_x += 5
+        rotate_x += drotate
     elif key == glfw.KEY_RIGHT:
-        rotate_y += 5
+        rotate_y += drotate
     elif key == glfw.KEY_LEFT:
-        rotate_y -= 5
-    elif key == glfw.KEY_W and scale < 1.9:
-        scale += 0.05
-    elif key == glfw.KEY_S and scale > 0.1:
-        scale -= 0.05
+        rotate_y -= drotate
+    elif key == glfw.KEY_I and scale < 1.9:
+        scale += dscale
+    elif key == glfw.KEY_R and scale > 0.1:
+        scale -= dscale
+    elif key == glfw.KEY_W:
+        shift[1] += dshift
+    elif key == glfw.KEY_S:
+        shift[1] -= dshift
+    elif key == glfw.KEY_D:
+        shift[0] += dshift
+    elif key == glfw.KEY_A:
+        shift[0] -= dshift
 
 
 def resize_callback(window, width, height):
@@ -78,10 +95,12 @@ def main():
     global rotate_x
     global rotate_y
     global scale
+    global shift
     fill = True
     rotate_x = 0
     rotate_y = 0
     scale = 1.0
+    shift = [0.0, 0.0]
 
     if not glfw.init():
         print("GLFW not initialized")
@@ -101,8 +120,8 @@ def main():
     glfw.set_key_callback(window, key_callback)
     glfw.set_framebuffer_size_callback(window, resize_callback)
 
-    big_cube = Cube((0.0, 0.0, 0.0), 0.6)
-    small_cube = Cube((0.8, 0.8, 0.0), 0.1)
+    big_cube = Cube([0.0, 0.0, 0.0], 0.6)
+    small_cube = Cube([0.8, 0.8, 0.0], 0.1)
 
     while not glfw.window_should_close(window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -121,9 +140,13 @@ def main():
                                 0, 0, 0, 1])
         glMatrixMode(GL_MODELVIEW)
 
-        big_cube.draw(fill, scale, rotate_x, rotate_y)
+        big_cube.draw(shift, fill, scale, rotate_x, rotate_y)
 
-        small_cube.draw(fill)
+        small_cube.draw([0.0, 0.0], fill)
+
+        # после каждой итерации сдвиг снова становится нулевым до тех пор,
+        # пока пользователь не нажмёт кнопку
+        shift = [0.0, 0.0]
 
         glfw.swap_buffers(window)
         glfw.poll_events()
