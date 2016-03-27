@@ -2,6 +2,7 @@ import glfw
 import math
 from OpenGL.GL import *
 from figures import Cube
+from figures import SurfaceOfRevolution
 
 
 def key_callback(window, key, scancode, action, mods):
@@ -46,6 +47,22 @@ def resize_callback(window, width, height):
         glViewport(0, 0, height, height)
 
 
+def make_projection():
+    a = 0.61
+    l = 1
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    glMultTransposeMatrixf([1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, -1, 0,
+                            0, 0, 0, 1])
+    glMultTransposeMatrixf([1, 0, -l * math.cos(a), 0,
+                            0, 1, -l * math.sin(a), 0,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1])
+    glMatrixMode(GL_MODELVIEW)
+
+
 def main():
     global fill
     global rotate_x
@@ -78,25 +95,16 @@ def main():
 
     big_cube = Cube([0.0, 0.0, 0.0], 0.6)
     small_cube = Cube([0.8, 0.8, 0.0], 0.1)
+    line = ((0.0, 0.2, 0.1), (0.1, 0.4, 0.5))
+    surface = SurfaceOfRevolution(line, [0.0, 0.0, 0.0])
 
     while not glfw.window_should_close(window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        a = 0.61
-        l = 1
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glMultTransposeMatrixf([1, 0, 0, 0,
-                                0, 1, 0, 0,
-                                0, 0, -1, 0,
-                                0, 0, 0, 1])
-        glMultTransposeMatrixf([1, 0, -l * math.cos(a), 0,
-                                0, 1, -l * math.sin(a), 0,
-                                0, 0, 1, 0,
-                                0, 0, 0, 1])
-        glMatrixMode(GL_MODELVIEW)
+        #make_projection()
 
-        big_cube.draw(shift, fill, scale, rotate_x, rotate_y)
+        surface.draw(shift, fill, scale, rotate_x, rotate_y)
+        #big_cube.draw(shift, fill, scale, rotate_x, rotate_y)
 
         small_cube.draw([0.0, 0.0], fill)
 
