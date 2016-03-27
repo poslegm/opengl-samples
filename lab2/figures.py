@@ -48,8 +48,8 @@ class Cube:
 
 
 class SurfaceOfRevolution:
-    @staticmethod
-    def __draw_circle_around_y(x, y, z, r, segmentsCount):
+
+    def __draw_circle_around_y(self, x, y, z, r, segmentsCount):
         glBegin(GL_LINE_LOOP)
         for i in range(segmentsCount):
             angle = 2.0 * math.pi * i / segmentsCount
@@ -58,11 +58,38 @@ class SurfaceOfRevolution:
             glVertex3f(x + dx, y, z + dz)
         glEnd()
 
+    def __get_delta(self, segmentsCount, i, r):
+        angle = 2.0 * math.pi * i / segmentsCount
+        dx = r * math.cos(angle)
+        dz = r * math.sin(angle)
+        return dx, dz
+
+    def __draw_polygon(self, v1, v2, segmentsCount):
+        r1 = math.sqrt(v1[0] ** 2 + v1[2] ** 2)
+        r2 = math.sqrt(v2[0] ** 2 + v2[2] ** 2)
+
+        for i in range(segmentsCount):
+            glBegin(GL_POLYGON)
+
+            dx1, dz1 = self.__get_delta(segmentsCount, i, r1)
+            dx2, dz2 = self.__get_delta(segmentsCount, i, r2)
+
+            glVertex3f(0.0 + dx1, v1[1], 0.0 + dz1)
+            glVertex3f(0.0 + dx2, v2[1], 0.0 + dz2)
+
+            dx1, dz1 = self.__get_delta(segmentsCount, i + 1, r1)
+            dx2, dz2 = self.__get_delta(segmentsCount, i + 1, r2)
+
+            glVertex3f(0.0 + dx2, v2[1], 0.0 + dz2)
+            glVertex3f(0.0 + dx1, v1[1], 0.0 + dz1)
+
+            glEnd()
+
     def __init__(self, vertices, center):
         self.__center = center
         self.__vertices = vertices
 
-    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0):
+    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, segmentsCount=40):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -74,8 +101,18 @@ class SurfaceOfRevolution:
         glRotatef(angle_x, 1, 0, 0)
         glRotatef(angle_y, 0, 1, 0)
 
+        if fill:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        else:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
         for v in self.__vertices:
             r = math.sqrt(v[0] ** 2 + v[2] ** 2)
             self.__draw_circle_around_y(0.0, v[1], 0.0, r, 90)
+
+        i = 0
+        while i < len(self.__vertices) - 1:
+            self.__draw_polygon(self.__vertices[i], self.__vertices[i + 1], segmentsCount)
+            i += 1
 
         glPopMatrix()

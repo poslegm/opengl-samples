@@ -11,6 +11,8 @@ def key_callback(window, key, scancode, action, mods):
     global rotate_y
     global scale
     global shift
+    global segmentsCount
+    global draw_cube
 
     drotate = 5
     dscale = 0.05
@@ -38,6 +40,12 @@ def key_callback(window, key, scancode, action, mods):
         shift[0] += dshift
     elif key == glfw.KEY_A:
         shift[0] -= dshift
+    elif key == glfw.KEY_L and segmentsCount > 5:
+        segmentsCount -= 1
+    elif key == glfw.KEY_M and segmentsCount < 100:
+        segmentsCount += 1
+    elif key == glfw.KEY_C and action == glfw.PRESS:
+        draw_cube = not draw_cube
 
 
 def resize_callback(window, width, height):
@@ -69,11 +77,15 @@ def main():
     global rotate_y
     global scale
     global shift
+    global segmentsCount
+    global draw_cube
     fill = True
     rotate_x = 0
     rotate_y = 0
     scale = 1.0
     shift = [0.0, 0.0]
+    segmentsCount = 40
+    draw_cube = True
 
     if not glfw.init():
         print("GLFW not initialized")
@@ -101,12 +113,13 @@ def main():
     while not glfw.window_should_close(window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        #make_projection()
+        make_projection()
 
-        surface.draw(shift, fill, scale, rotate_x, rotate_y)
-        #big_cube.draw(shift, fill, scale, rotate_x, rotate_y)
-
-        small_cube.draw([0.0, 0.0], fill)
+        if draw_cube:
+            big_cube.draw(shift, fill, scale, rotate_x, rotate_y)
+            small_cube.draw([0.0, 0.0], fill)
+        else:
+            surface.draw(shift, fill, scale, rotate_x, rotate_y, segmentsCount)
 
         # после каждой итерации сдвиг снова становится нулевым до тех пор,
         # пока пользователь не нажмёт кнопку
