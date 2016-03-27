@@ -9,6 +9,7 @@ def key_callback(window, key, scancode, action, mods):
     global fill
     global rotate_x
     global rotate_y
+    global rotate_z
     global scale
     global shift
     global segmentsCount
@@ -17,6 +18,7 @@ def key_callback(window, key, scancode, action, mods):
     drotate = 5
     dscale = 0.05
     dshift = 0.03
+    dsegments = 1
 
     if key == glfw.KEY_F and action == glfw.PRESS:
         fill = not fill
@@ -28,6 +30,10 @@ def key_callback(window, key, scancode, action, mods):
         rotate_y += drotate
     elif key == glfw.KEY_LEFT:
         rotate_y -= drotate
+    elif key == glfw.KEY_Z:
+        rotate_z += drotate
+    elif key == glfw.KEY_X:
+        rotate_z -= drotate
     elif key == glfw.KEY_I and scale < 1.9:
         scale += dscale
     elif key == glfw.KEY_R and scale > 0.1:
@@ -41,9 +47,9 @@ def key_callback(window, key, scancode, action, mods):
     elif key == glfw.KEY_A:
         shift[0] -= dshift
     elif key == glfw.KEY_L and segmentsCount > 5:
-        segmentsCount -= 1
+        segmentsCount -= dsegments
     elif key == glfw.KEY_M and segmentsCount < 100:
-        segmentsCount += 1
+        segmentsCount += dsegments
     elif key == glfw.KEY_C and action == glfw.PRESS:
         draw_cube = not draw_cube
 
@@ -75,6 +81,7 @@ def main():
     global fill
     global rotate_x
     global rotate_y
+    global rotate_z
     global scale
     global shift
     global segmentsCount
@@ -82,6 +89,7 @@ def main():
     fill = True
     rotate_x = 0
     rotate_y = 0
+    rotate_z = 0
     scale = 1.0
     shift = [0.0, 0.0]
     segmentsCount = 40
@@ -107,7 +115,16 @@ def main():
 
     big_cube = Cube([0.0, 0.0, 0.0], 0.6)
     small_cube = Cube([0.8, 0.8, 0.0], 0.1)
-    line = ((0.0, 0.2, 0.1), (0.1, 0.4, 0.5))
+    line = (
+        (0.0, 0.65, 0.0),
+        (0.2, 0.4, 0.0),
+        (0.05, 0.4, 0.0),
+        (0.35, 0.0, 0.0),
+        (0.08, 0.0, 0.0),
+        (0.08, -0.15, 0.0),
+        (0.0, -0.15, 0.0)
+    )
+    color = (0.0, 0.6, 0.1)
     surface = SurfaceOfRevolution(line, [0.0, 0.0, 0.0])
 
     while not glfw.window_should_close(window):
@@ -116,10 +133,11 @@ def main():
         make_projection()
 
         if draw_cube:
-            big_cube.draw(shift, fill, scale, rotate_x, rotate_y)
+            big_cube.draw(shift, fill, scale, rotate_x, rotate_y, rotate_z)
             small_cube.draw([0.0, 0.0], fill)
         else:
-            surface.draw(shift, fill, scale, rotate_x, rotate_y, segmentsCount)
+            glColor3f(*color)
+            surface.draw(shift, fill, scale, rotate_x, rotate_y, rotate_z, segmentsCount)
 
         # после каждой итерации сдвиг снова становится нулевым до тех пор,
         # пока пользователь не нажмёт кнопку

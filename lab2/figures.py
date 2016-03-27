@@ -9,6 +9,8 @@ class Cube:
     __colors = ((0, 0, 1, 1), (0, 1, 1, 1), (1, 1, 1, 1),
                 (1, 1, 0, 1), (1, 0, 0, 1), (1, 0, 1, 1))
 
+    __line_color = (0.3, 0.6, 0.5)
+
     def __init__(self, center, size):
         self.__center = center
         coord = size / 2
@@ -19,7 +21,7 @@ class Cube:
             (-coord, -coord, coord), (-coord, coord, coord)
         )
 
-    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0):
+    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -30,6 +32,7 @@ class Cube:
         glScalef(scale, scale, scale)
         glRotatef(angle_x, 1, 0, 0)
         glRotatef(angle_y, 0, 1, 0)
+        glRotatef(angle_z, 0, 0, 1)
 
         if fill:
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
@@ -40,6 +43,8 @@ class Cube:
         for i in range(len(self.__sides)):
             if fill:
                 glColor4f(*self.__colors[i])
+            else:
+                glColor3f(*self.__line_color)
             for vertex in self.__sides[i]:
                 glVertex3f(*self.__vertices[vertex])
         glEnd()
@@ -70,7 +75,6 @@ class SurfaceOfRevolution:
 
         for i in range(segmentsCount):
             glBegin(GL_POLYGON)
-
             dx1, dz1 = self.__get_delta(segmentsCount, i, r1)
             dx2, dz2 = self.__get_delta(segmentsCount, i, r2)
 
@@ -89,7 +93,7 @@ class SurfaceOfRevolution:
         self.__center = center
         self.__vertices = vertices
 
-    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, segmentsCount=40):
+    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0, segmentsCount=40):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -100,6 +104,7 @@ class SurfaceOfRevolution:
         glScalef(scale, scale, scale)
         glRotatef(angle_x, 1, 0, 0)
         glRotatef(angle_y, 0, 1, 0)
+        glRotatef(angle_z, 0, 0, 1)
 
         if fill:
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
