@@ -45,6 +45,7 @@ class Cube:
                 glColor4f(*self.__colors[i])
             else:
                 glColor3f(*self.__line_color)
+
             for vertex in self.__sides[i]:
                 glVertex3f(*self.__vertices[vertex])
         glEnd()
@@ -53,26 +54,27 @@ class Cube:
 
 
 class SurfaceOfRevolution:
-    def __get_delta(self, segmentsCount, i, r):
-        angle = 2.0 * math.pi * i / segmentsCount
+    @staticmethod
+    def __get_delta(segments_count, i, r):
+        angle = 2.0 * math.pi * i / segments_count
         dx = r * math.cos(angle)
         dz = r * math.sin(angle)
         return dx, dz
 
-    def __draw_polygon(self, v1, v2, segmentsCount):
+    def __draw_polygon(self, v1, v2, segments_count):
         r1 = math.sqrt(v1[0] ** 2 + v1[2] ** 2)
         r2 = math.sqrt(v2[0] ** 2 + v2[2] ** 2)
 
-        for i in range(segmentsCount):
+        for i in range(segments_count):
             glBegin(GL_POLYGON)
-            dx1, dz1 = self.__get_delta(segmentsCount, i, r1)
-            dx2, dz2 = self.__get_delta(segmentsCount, i, r2)
+            dx1, dz1 = self.__get_delta(segments_count, i, r1)
+            dx2, dz2 = self.__get_delta(segments_count, i, r2)
 
             glVertex3f(0.0 + dx1, v1[1], 0.0 + dz1)
             glVertex3f(0.0 + dx2, v2[1], 0.0 + dz2)
 
-            dx1, dz1 = self.__get_delta(segmentsCount, i + 1, r1)
-            dx2, dz2 = self.__get_delta(segmentsCount, i + 1, r2)
+            dx1, dz1 = self.__get_delta(segments_count, i + 1, r1)
+            dx2, dz2 = self.__get_delta(segments_count, i + 1, r2)
 
             glVertex3f(0.0 + dx2, v2[1], 0.0 + dz2)
             glVertex3f(0.0 + dx1, v1[1], 0.0 + dz1)

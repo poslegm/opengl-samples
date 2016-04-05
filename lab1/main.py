@@ -2,10 +2,10 @@ import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-
 global direction
 global rotate
 global speed
+
 
 def key_callback(window, key, scancode, action, mods):
     global direction
@@ -13,17 +13,15 @@ def key_callback(window, key, scancode, action, mods):
     global speed
 
     if key == glfw.KEY_LEFT and action == glfw.PRESS:
-       direction = 1
+        direction = 1
     elif key == glfw.KEY_RIGHT and action == glfw.PRESS:
-       direction = -1
+        direction = -1
     elif key == glfw.KEY_ENTER and action == glfw.PRESS:
         rotate = not rotate
     elif key == glfw.KEY_UP and action == glfw.PRESS and speed < 300.0:
         speed += 10.0
-        print("Speed: " + str(speed))
     elif key == glfw.KEY_DOWN and action == glfw.PRESS and speed > 10.0:
         speed -= 10.0
-        print("Speed: " + str(speed))
 
 
 def draw_quad():
@@ -83,6 +81,7 @@ def main():
 
     print("Terminate...")
     glfw.terminate()
+
 
 if __name__ == "__main__":
     main()
