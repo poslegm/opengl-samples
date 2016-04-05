@@ -53,16 +53,6 @@ class Cube:
 
 
 class SurfaceOfRevolution:
-
-    def __draw_circle_around_y(self, x, y, z, r, segmentsCount):
-        glBegin(GL_LINE_LOOP)
-        for i in range(segmentsCount):
-            angle = 2.0 * math.pi * i / segmentsCount
-            dx = r * math.cos(angle)
-            dz = r * math.sin(angle)
-            glVertex3f(x + dx, y, z + dz)
-        glEnd()
-
     def __get_delta(self, segmentsCount, i, r):
         angle = 2.0 * math.pi * i / segmentsCount
         dx = r * math.cos(angle)
@@ -110,10 +100,6 @@ class SurfaceOfRevolution:
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-
-        for v in self.__vertices:
-            r = math.sqrt(v[0] ** 2 + v[2] ** 2)
-            self.__draw_circle_around_y(0.0, v[1], 0.0, r, 90)
 
         i = 0
         while i < len(self.__vertices) - 1:
