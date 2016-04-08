@@ -61,31 +61,43 @@ class SurfaceOfRevolution:
         dz = r * math.sin(angle)
         return dx, dz
 
-    def __draw_polygon(self, v1, v2, segments_count):
-        r1 = math.sqrt(v1[0] ** 2 + v1[2] ** 2)
-        r2 = math.sqrt(v2[0] ** 2 + v2[2] ** 2)
+    def __compute_grid(self, segments_count):
+        self.__grid = []
 
-        for i in range(segments_count):
-            glBegin(GL_POLYGON)
-            dx1, dz1 = self.__get_delta(segments_count, i, r1)
-            dx2, dz2 = self.__get_delta(segments_count, i, r2)
+        i = 0
+        while i < len(self.__vertices) - 1:
+            v1 = self.__vertices[i]
+            v2 = self.__vertices[i + 1]
 
-            glVertex3f(0.0 + dx1, v1[1], 0.0 + dz1)
-            glVertex3f(0.0 + dx2, v2[1], 0.0 + dz2)
+            r1 = math.sqrt(v1[0] ** 2 + v1[2] ** 2)
+            r2 = math.sqrt(v2[0] ** 2 + v2[2] ** 2)
 
-            dx1, dz1 = self.__get_delta(segments_count, i + 1, r1)
-            dx2, dz2 = self.__get_delta(segments_count, i + 1, r2)
+            for j in range(segments_count):
+                dx1, dz1 = self.__get_delta(segments_count, j, r1)
+                dx2, dz2 = self.__get_delta(segments_count, j, r2)
 
-            glVertex3f(0.0 + dx2, v2[1], 0.0 + dz2)
-            glVertex3f(0.0 + dx1, v1[1], 0.0 + dz1)
+                self.__grid.append([(dx1, v1[1], dz1), (dx2, v2[1], dz2)])
 
-            glEnd()
+                dx1, dz1 = self.__get_delta(segments_count, j + 1, r1)
+                dx2, dz2 = self.__get_delta(segments_count, j + 1, r2)
 
-    def __init__(self, vertices, center):
+                self.__grid[-1].append((dx2, v2[1], dz2))
+                self.__grid[-1].append((dx1, v1[1], dz1))
+
+            i += 1
+
+    def __init__(self, vertices, center, segments_count=40):
         self.__center = center
         self.__vertices = vertices
+        self.__segments_count = segments_count
+        self.__compute_grid(segments_count)
 
-    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0, segmentsCount=40):
+    def change_segments_count(self, segments_count):
+        if segments_count != self.__segments_count:
+            self.__segments_count = segments_count
+            self.__compute_grid(self.__segments_count)
+
+    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -103,9 +115,10 @@ class SurfaceOfRevolution:
         else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
-        i = 0
-        while i < len(self.__vertices) - 1:
-            self.__draw_polygon(self.__vertices[i], self.__vertices[i + 1], segmentsCount)
-            i += 1
+        for polygon in self.__grid:
+            glBegin(GL_POLYGON)
+            for v in polygon:
+                glVertex3f(*v)
+            glEnd()
 
         glPopMatrix()

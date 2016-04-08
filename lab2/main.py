@@ -115,6 +115,7 @@ def main():
 
     big_cube = Cube([0.0, 0.0, 0.0], 0.6)
     small_cube = Cube([0.8, 0.8, 0.0], 0.1)
+
     line = (
         (0.0, 0.65, 0.0),
         (0.2, 0.4, 0.0),
@@ -137,7 +138,8 @@ def main():
             small_cube.draw([0.0, 0.0], fill)
         else:
             glColor3f(*color)
-            surface.draw(shift, fill, scale, rotate_x, rotate_y, rotate_z, segmentsCount)
+            surface.change_segments_count(segmentsCount)
+            surface.draw(shift, fill, scale, rotate_x, rotate_y, rotate_z)
 
         # после каждой итерации сдвиг снова становится нулевым до тех пор,
         # пока пользователь не нажмёт кнопку
