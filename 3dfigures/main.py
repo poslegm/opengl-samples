@@ -14,6 +14,7 @@ def key_callback(window, key, scancode, action, mods):
     global shift
     global segmentsCount
     global draw_cube
+    global isometric
 
     drotate = 5
     dscale = 0.05
@@ -52,6 +53,8 @@ def key_callback(window, key, scancode, action, mods):
         segmentsCount += dsegments
     elif key == glfw.KEY_C and action == glfw.PRESS:
         draw_cube = not draw_cube
+    elif key == glfw.KEY_P and action == glfw.PRESS:
+        isometric = not isometric
 
 
 def resize_callback(window, width, height):
@@ -61,19 +64,20 @@ def resize_callback(window, width, height):
         glViewport(0, 0, height, height)
 
 
-def make_projection():
+def make_projection(is_isometric):
     a = 0.61
     l = 1
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    glMultTransposeMatrixf([1, 0, 0, 0,
-                            0, 1, 0, 0,
-                            0, 0, -1, 0,
-                            0, 0, 0, 1])
-    glMultTransposeMatrixf([1, 0, -l * math.cos(a), 0,
-                            0, 1, -l * math.sin(a), 0,
-                            0, 0, 1, 0,
-                            0, 0, 0, 1])
+    if is_isometric:
+        glMultTransposeMatrixf([1, 0, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, -1, 0,
+                                0, 0, 0, 1])
+        glMultTransposeMatrixf([1, 0, -l * math.cos(a), 0,
+                                0, 1, -l * math.sin(a), 0,
+                                0, 0, 1, 0,
+                                0, 0, 0, 1])
     glMatrixMode(GL_MODELVIEW)
 
 
@@ -86,6 +90,7 @@ def main():
     global shift
     global segmentsCount
     global draw_cube
+    global isometric
     fill = True
     rotate_x = 0
     rotate_y = 0
@@ -94,6 +99,7 @@ def main():
     shift = [0.0, 0.0]
     segmentsCount = 40
     draw_cube = True
+    isometric = False
 
     if not glfw.init():
         print("GLFW not initialized")
@@ -131,7 +137,8 @@ def main():
     while not glfw.window_should_close(window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        make_projection()
+
+        make_projection(isometric)
 
         if draw_cube:
             big_cube.draw(shift, fill, scale, rotate_x, rotate_y, rotate_z)
