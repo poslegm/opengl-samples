@@ -87,11 +87,12 @@ def main():
     glfw.set_framebuffer_size_callback(window, resize_callback)
 
     figure = [
-        (0, 0), (0, 100), (100, 100), (150, 50), (100, 0), (50, 50)
+        (0, 0), (0, 10), (10, 10), (15, 5), (10, 0), (5, 5)
     ]
-    figure = list(map(lambda coords: (coords[0] * 2, coords[1] * 2), figure))
-    scene_width = 300
-    scene_height = 300
+    scale = 20
+    figure = list(map(lambda coords: (coords[0] * scale, coords[1] * scale), figure))
+    scene_width = 15 * scale
+    scene_height = 15 * scale
 
     intersections = get_sorted_intersections(figure)
     matrix = create_matrix(scene_width, scene_height, intersections, (1.0, 0.1, 0.1))
