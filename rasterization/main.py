@@ -25,20 +25,32 @@ def merge_dicts(dicts):
 
 
 def compute_intersections(x1, y1, x2, y2):
+    # используется целочисленный алгоритм Брезенхэма
     if y2 - y1 == 0:
         # случай с горизонтальным ребром не рассматривается
         return {}
 
-    dx = abs(x2 - x1) / abs(y2 - y1)
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
+
     # определяется направление движения
     y_step = 1 if y1 < y2 else -1
-    dx *= 1 if x1 < x2 else -1
+    x_step = 1 if x1 < x2 else -1
 
     x = x1
+    e = 0
+    de = dx
+    w = dy
     intersections = {}
     for y in range(y1, y2 + y_step, y_step):
-        intersections.setdefault(y, []).append(round(x))
-        x += dx
+        intersections.setdefault(y, []).append(x)
+        e += de
+        if 2 * e >= w:
+            x += x_step
+            e -= w
+        else:
+            e += de
+
     return intersections
 
 
