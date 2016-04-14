@@ -2,10 +2,6 @@ import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-global direction
-global rotate
-global speed
-
 
 def key_callback(window, key, scancode, action, mods):
     global direction
