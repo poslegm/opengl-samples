@@ -36,7 +36,7 @@ def compute_intersections(x1, y1, x2, y2):
 
     x = x1
     intersections = {}
-    for y in range(y1, y2, y_step):
+    for y in range(y1, y2 + y_step, y_step):
         intersections.setdefault(y, []).append(round(x))
         x += dx
     return intersections
@@ -94,7 +94,6 @@ def main():
     scene_height = 300
 
     intersections = get_sorted_intersections(figure)
-    print(intersections)
     matrix = create_matrix(scene_width, scene_height, intersections, (1.0, 0.1, 0.1))
 
     while not glfw.window_should_close(window):
