@@ -4,11 +4,23 @@ from OpenGL.GL import *
 
 
 def key_callback(window, key, scancode, action, mods):
-    global clear
-    if key == glfw.KEY_C and action == glfw.PRESS:
+    global clear, mode
+    if key == glfw.KEY_1 and action == glfw.PRESS and mode != 1:
+        mode = 1
         clear = True
-    elif key == glfw.KEY_D and action == glfw.PRESS:
-        clear = False
+    elif key == glfw.KEY_1 and action == glfw.PRESS:
+        mode = 1
+    elif key == glfw.KEY_2 and action == glfw.PRESS:
+        mode = 2
+    elif key == glfw.KEY_3 and action == glfw.PRESS:
+        mode = 3
+
+
+def mouse_button_callback(window, button, action, mods):
+    global x, y, clicked
+    if button == glfw.MOUSE_BUTTON_1 and action == glfw.PRESS:
+        x, y = glfw.get_cursor_pos(window)
+        clicked = True
 
 
 def resize_callback(window, width, height):
@@ -56,7 +68,7 @@ def compute_intersections(x1, y1, x2, y2):
 
 def get_sorted_intersections(vertexes):
     edges = [(vertexes[i], vertexes[i + 1]) for i in range(-1, len(vertexes) - 1)]
-
+    print(edges)
     intersections = [compute_intersections(x1, y1, x2, y2) for (x1, y1), (x2, y2) in edges]
     # предыдущее действие возвращало список словарей, где ключ - y, а значение - x
     # далее происходит слияние этих словарей в один
@@ -76,9 +88,42 @@ def create_matrix(width, height, intersections, color):
     return matrix
 
 
+def prepare_projection(width, height):
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    glOrtho(0.0, width, 0.0, height, 1.0, -1.0)
+    glMatrixMode(GL_MODELVIEW)
+
+
+def draw_points(coordinates, color):
+    glPointSize(2.0)
+    glBegin(GL_POINTS)
+    glColor3f(*color)
+    for x, y in coordinates:
+        glVertex2f(x, y)
+    glEnd()
+
+
+def draw_lines(coordinates, color):
+    if len(coordinates) > 1:
+        glBegin(GL_LINE_STRIP)
+        glColor3f(*color)
+        for x, y in coordinates:
+            glVertex2f(x, y)
+        glEnd()
+
+
+# 1. произвольное задание многоугольника и отрисовка через GL_LINE
+# 2. заливка многоугольника пикселями
+# 3. применение сглаживания
+# TODO обработать изменение размера окна
+# TODO найти более эффективный способ работы с матрицей пикселей
+
 def main():
-    global clear
-    clear = False
+    global clear, x, y, clicked, mode
+    mode = 1
+    clicked = False
+    clear = True
 
     if not glfw.init():
         print("GLFW not initialized")
@@ -97,23 +142,38 @@ def main():
 
     glfw.set_key_callback(window, key_callback)
     glfw.set_framebuffer_size_callback(window, resize_callback)
+    glfw.set_mouse_button_callback(window, mouse_button_callback)
 
-    figure = [
-        (0, 0), (0, 10), (10, 10), (15, 5), (10, 0), (5, 5)
-    ]
-    scale = 20
-    figure = list(map(lambda coords: (coords[0] * scale, coords[1] * scale), figure))
-    scene_width = 15 * scale
-    scene_height = 15 * scale
-
-    intersections = get_sorted_intersections(figure)
-    matrix = create_matrix(scene_width, scene_height, intersections, (1.0, 0.1, 0.1))
+    figure = []
+    intersections = None
+    color = (1.0, 0.1, 0.0)
 
     while not glfw.window_should_close(window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        width, height = glfw.get_window_size(window)
+        prepare_projection(width, height)
 
-        if not clear:
-            glDrawPixels(scene_width, scene_height, GL_RGB, GL_FLOAT, matrix)
+        if clear:
+            figure = []
+            intersections = None
+            matrix = None
+            clear = False
+
+        if mode == 1:
+            if clicked:
+                figure.append((int(x), int(height - y)))
+            draw_points(figure, color)
+            draw_lines(figure, color)
+            clicked = False
+        elif mode == 2:
+            if intersections is None:
+                print(figure)
+                intersections = get_sorted_intersections(figure)
+                matrix = create_matrix(width, height, intersections, color)
+            if matrix is not None:
+                glDrawPixels(width, height, GL_RGB, GL_FLOAT, matrix)
+        elif mode == 3:
+            pass
 
         glfw.swap_buffers(window)
         glfw.poll_events()
