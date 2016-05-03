@@ -1,6 +1,7 @@
 import glfw
 import itertools as itertools
 from OpenGL.GL import *
+import numpy as np
 
 
 def key_callback(window, key, scancode, action, mods):
@@ -38,19 +39,18 @@ def resize_callback(window, width, height):
 def merge_dicts(dicts):
     keys = set().union(*dicts)
     dicts = {k: [i.get(k, []) for i in dicts] for k in keys}
-    return {k: list(itertools.chain(*v)) for k, v in dicts.items()}
+    return {k: list(set(itertools.chain(*v))) for k, v in dicts.items()}
 
 
+# TODO исправить заливку, когда одному y соответствует нечётное количество x
 def compute_intersections(x1, y1, x2, y2):
     dx = (x2 - x1) / abs((y2 - y1))
     x = x1
     y_step = 1 if y1 < y2 else -1
-
     intersections = {}
-    for y in range(y1, y2, y_step):
+    for y in range(y1 + y_step, y2, y_step):
         intersections.setdefault(y, []).append(int(x))
         x += dx
-
     return intersections
 
 
@@ -108,12 +108,12 @@ def get_sorted_intersections(vertexes, smoothing=False):
 
 
 def create_matrix(width, height, intersections, color):
-    matrix = [[(0.0, 0.0, 0.0) for _ in range(width)] for _ in range(height)]
+    matrix = np.zeros((width, height), dtype='3float32')
     for y, xs in intersections.items():
         for i in range(0, len(xs) - 1, 2):
             for x in range(xs[i], xs[i + 1]):
                 matrix[y][x] = color
-    return matrix
+    return np.array(matrix)
 
 
 def prepare_projection(width, height):
