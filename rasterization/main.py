@@ -31,61 +31,90 @@ def mouse_button_callback(window, button, action, mods):
 
 
 def resize_callback(window, width, height):
-    global clear_all
+    global clear_all, window_height
+    window_height = height
     glViewport(0, 0, width, height)
     clear_all = True
 
 
-def merge_dicts(dicts):
+def is_doubling_need(x, y, edges):
+    edges_with_vertex = list(filter(lambda e: (x, y) in e, edges))
+    if len(edges_with_vertex) != 2:
+        return True
+    # находим вершины, соседние от данной в списке рёбер
+    _, y1 = list(filter(lambda e: e[0] != x and e[1] != y, edges_with_vertex[0]))[0]
+    _, y2 = list(filter(lambda e: e[0] != x and e[1] != y, edges_with_vertex[1]))[0]
+    # дублировать нужно, если вершина не лежит между соседними
+    return (y1 > y and y2 > y) or (y1 < y and y2 < y)
+
+
+def merge_dicts(dicts, edges):
     keys = set().union(*dicts)
     dicts = {k: [i.get(k, []) for i in dicts] for k in keys}
-    return {k: list(set(itertools.chain(*v))) for k, v in dicts.items()}
+    dicts = {k: sorted(list(itertools.chain(*v))) for k, v in dicts.items()}
+    # устранения дублирующихся значений х там, где это не нужно
+    for y, xs in dicts.items():
+        new_xs = []
+        for x in xs:
+            x_count = len(list(filter(lambda i: i == x, xs)))
+            if x_count > 1 and ((x not in new_xs) or (x in new_xs and is_doubling_need(x, y, edges))):
+                new_xs.append(x)
+            elif x_count == 1:
+                new_xs.append(x)
+        dicts[y] = new_xs
+    return dicts
 
 
-# TODO исправить заливку, когда одному y соответствует нечётное количество x
 def compute_intersections(x1, y1, x2, y2):
-    dx = (x2 - x1) / abs((y2 - y1))
-    x = x1
-    y_step = 1 if y1 < y2 else -1
+    global window_height
+
+    if y1 == y2:
+        return {}
+
     intersections = {}
-    for y in range(y1 + y_step, y2, y_step):
-        intersections.setdefault(y, []).append(int(x))
-        x += dx
+    for y in range(window_height):
+        x = (y - y1) * (x2 - x1) / (y2 - y1) + x1
+        if (min(y1, y2) <= y <= max(y1, y2)) and (min(x1, x2) <= x <= max(x1, x2)):
+            intersections.setdefault(y, []).append(round(x))
     return intersections
 
 
 def compute_intersections_smoothing(x1, y1, x2, y2):
-    # используется целочисленный алгоритм Брезенхэма
     if y2 - y1 == 0:
         # случай с горизонтальным ребром не рассматривается
         return {}
 
-    slope = abs(y2 - y1) > abs(x2 - x1)
-
-    if slope:
-        x1, y1 = y1, x1
-        x2, y2 = y2, x2
-
-    if x1 > x2:
-        x1, x2 = x2, x1
-        y1, y2 = y2, y1
+    # используется целочисленный алгоритм Брезенхэма
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
 
     # определяется направление движения
     y_step = 1 if y1 < y2 else -1
+    x_step = 1 if x1 < x2 else -1
 
-    dx = x2 - x1
-    dy = abs(y2 - y1)
+    slope = dy > dx
+
+    if slope:
+        dx, dy = dy, dx
 
     y = y1
-    e = dx
+    x = x1
+    e = 2 * dy - dx
     intersections = {}
-    for x in range(x1, x2 + 1):
-        x_r, y_r = (y, x) if slope else (x, y)
-        intersections.setdefault(y_r, []).append(x_r)
-        e += dy
-        if 100 * e >= dx:
+
+    for i in range(1, dx + 1):
+        intersections.setdefault(y, []).append(x)
+        while e >= 0:
+            if slope:
+                x += x_step
+            else:
+                y += y_step
+            e -= 2 * dx
+        if slope:
             y += y_step
-            e -= dx
+        else:
+            x += x_step
+        e += 2 * dy
 
     return intersections
 
@@ -99,10 +128,10 @@ def get_sorted_intersections(vertexes, smoothing=False):
     print(edges)
     # предыдущее действие возвращало список словарей, где ключ - y, а значение - x
     # далее происходит слияние этих словарей в один
-    intersections = merge_dicts(intersections)
+    intersections = merge_dicts(intersections, edges)
     intersections = {k: sorted(v) for k, v in intersections.items()}
     intersections = {k: intersections[k] for k in sorted(intersections.keys())}
-    print(intersections)
+    print({k: v for k, v in intersections.items() if len(v) % 2 != 0})
 
     return intersections
 
@@ -149,16 +178,17 @@ def draw_lines(coordinates, color, is_complete):
 # 3. применение сглаживания
 
 def main():
-    global clear_all, clear_buffers, x, y, clicked, mode, complete
+    global clear_all, clear_buffers, x, y, clicked, mode, complete, window_height
     mode = 1
     clicked, complete = False, False
     clear_all, clear_buffers = True, True
+    window_height = 640
 
     if not glfw.init():
         print("GLFW not initialized")
         return
 
-    window = glfw.create_window(640, 640, "Rasterization", None, None)
+    window = glfw.create_window(640, window_height, "Rasterization", None, None)
     if not window:
         print("Window not created")
         glfw.terminate()
