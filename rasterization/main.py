@@ -42,8 +42,8 @@ def is_doubling_need(x, y, edges):
     if len(edges_with_vertex) != 2:
         return True
     # находим вершины, соседние от данной в списке рёбер
-    _, y1 = list(filter(lambda e: e[0] != x and e[1] != y, edges_with_vertex[0]))[0]
-    _, y2 = list(filter(lambda e: e[0] != x and e[1] != y, edges_with_vertex[1]))[0]
+    _, y1 = list(filter(lambda e: e[0] != x or e[1] != y, edges_with_vertex[0]))[0]
+    _, y2 = list(filter(lambda e: e[0] != x or e[1] != y, edges_with_vertex[1]))[0]
     # дублировать нужно, если вершина не лежит между соседними
     return (y1 > y and y2 > y) or (y1 < y and y2 < y)
 
@@ -79,7 +79,7 @@ def compute_intersections(x1, y1, x2, y2):
     return intersections
 
 
-def compute_intersections_smoothing(x1, y1, x2, y2):
+def compute_pixels_smoothing(x1, y1, x2, y2, color, matrix):
     if y2 - y1 == 0:
         # случай с горизонтальным ребром не рассматривается
         return {}
@@ -88,50 +88,64 @@ def compute_intersections_smoothing(x1, y1, x2, y2):
     dx = abs(x2 - x1)
     dy = abs(y2 - y1)
 
-    # определяется направление движения
-    y_step = 1 if y1 < y2 else -1
-    x_step = 1 if x1 < x2 else -1
-
     slope = dy > dx
 
     if slope:
         dx, dy = dy, dx
 
+    if slope and ((x2 < x1 and y2 > y1) or (x1 < x2 and y2 < y1)):
+        y2, y1 = y1, y2
+        x1, x2 = x2, x1
+    elif not slope and ((y1 < y2 and x1 < x2) or (y2 < y1 and x2 < x1)):
+        y2, y1 = y1, y2
+        x1, x2 = x2, x1
+
+    # определяется направление движения
+    y_step = 1 if y1 < y2 else -1
+    x_step = 1 if x1 < x2 else -1
+
     y = y1
     x = x1
-    e = 2 * dy - dx
-    intersections = {}
 
-    for i in range(1, dx + 1):
-        intersections.setdefault(y, []).append(x)
-        while e >= 0:
+    bright_max = 8  # максимальный коэффициент яркость умножается на 10, чтобы арифметика с ним была целочисленной
+    bright_min = 0.2
+    # все константы домножены на 2 * dx
+    e = bright_max * dx
+    m = 2 * dy * bright_max
+    w = 2 * e
+    e_max = w - m
+
+    matrix[y][x] = tuple(map(lambda x: x * (bright_min + bright_max / 20), color))
+    for i in range(dx):
+        if e >= e_max:
             if slope:
                 x += x_step
             else:
                 y += y_step
-            e -= 2 * dx
+            e -= w
         if slope:
             y += y_step
         else:
             x += x_step
-        e += 2 * dy
+        e += m
+        bright = bright_min + e / (2 * dx * 10)
+        matrix[y][x] = tuple(map(lambda x: x * bright, color))
 
-    return intersections
+    return matrix
 
 
-def get_sorted_intersections(vertexes, smoothing=False):
-    edges = [(vertexes[i], vertexes[i + 1]) for i in range(-1, len(vertexes) - 1)]
-    if smoothing:
-        intersections = [compute_intersections_smoothing(x1, y1, x2, y2) for (x1, y1), (x2, y2) in edges]
-    else:
-        intersections = [compute_intersections(x1, y1, x2, y2) for (x1, y1), (x2, y2) in edges]
+def create_edges(vertexes):
+    return [(vertexes[i], vertexes[i + 1]) for i in range(-1, len(vertexes) - 1)]
+
+
+def get_sorted_intersections(vertexes):
+    edges = create_edges(vertexes)
     print(edges)
+    intersections = [compute_intersections(x1, y1, x2, y2) for (x1, y1), (x2, y2) in edges]
     # предыдущее действие возвращало список словарей, где ключ - y, а значение - x
     # далее происходит слияние этих словарей в один
     intersections = merge_dicts(intersections, edges)
-    intersections = {k: sorted(v) for k, v in intersections.items()}
-    intersections = {k: intersections[k] for k in sorted(intersections.keys())}
-    print({k: v for k, v in intersections.items() if len(v) % 2 != 0})
+    intersections = {k: sorted(intersections[k]) for k in sorted(intersections.keys())}
 
     return intersections
 
@@ -140,9 +154,16 @@ def create_matrix(width, height, intersections, color):
     matrix = np.zeros((width, height), dtype='3float32')
     for y, xs in intersections.items():
         for i in range(0, len(xs) - 1, 2):
-            for x in range(xs[i], xs[i + 1]):
+            for x in range(xs[i], xs[i + 1] + 1):
                 matrix[y][x] = color
-    return np.array(matrix)
+    return matrix
+
+
+def add_lines_to_matrix(vertexes, color, matrix):
+    edges = create_edges(vertexes)
+    for (x1, y1), (x2, y2) in edges:
+        compute_pixels_smoothing(x1, y1, x2, y2, color, matrix)
+    return matrix
 
 
 def prepare_projection(width, height):
@@ -171,6 +192,13 @@ def draw_lines(coordinates, color, is_complete):
         for x, y in coordinates:
             glVertex2f(x, y)
         glEnd()
+
+
+def create_figure_view(width, height, figure, color):
+    intersections = get_sorted_intersections(figure)
+    matrix = create_matrix(width, height, intersections, color)
+
+    return matrix
 
 
 # 1. произвольное задание многоугольника и отрисовка через GL_LINE
@@ -204,8 +232,7 @@ def main():
     glfw.set_mouse_button_callback(window, mouse_button_callback)
 
     figure = []
-    intersections = None
-    color = (1.0, 0.1, 0.0)
+    color = (1.0, 1.0, 1.0)
 
     while not glfw.window_should_close(window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -213,13 +240,11 @@ def main():
         prepare_projection(width, height)
 
         if clear_buffers:
-            intersections = None
             matrix = None
             clear_buffers = False
 
         if clear_all:
             figure = []
-            intersections = None
             matrix = None
             clear_all, complete = False, False
 
@@ -230,17 +255,16 @@ def main():
             draw_lines(figure, color, complete)
             clicked = False
         elif mode == 2:
-            if intersections is None:
-                intersections = get_sorted_intersections(figure)
-                matrix = create_matrix(width, height, intersections, color)
-            if matrix is not None:
-                glDrawPixels(width, height, GL_RGB, GL_FLOAT, matrix)
+            if matrix is None:
+                matrix = create_figure_view(width, height, figure, color)
+            glDrawPixels(width, height, GL_RGB, GL_FLOAT, matrix)
         elif mode == 3:
-            if intersections is None:
-                intersections = get_sorted_intersections(figure, smoothing=True)
-                matrix = create_matrix(width, height, intersections, color)
-            if matrix is not None:
-                glDrawPixels(width, height, GL_RGB, GL_FLOAT, matrix)
+            # фильтрация работает только при задании вершин против часовой стрелки!
+            # отрисовка сглаженных границ
+            if matrix is None:
+                matrix = create_figure_view(width, height, figure, color)
+                matrix = add_lines_to_matrix(figure, color, matrix)
+            glDrawPixels(width, height, GL_RGB, GL_FLOAT, matrix)
 
         glfw.swap_buffers(window)
         glfw.poll_events()
