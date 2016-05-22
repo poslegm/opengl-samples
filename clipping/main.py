@@ -180,6 +180,7 @@ def compute_clipping(segments_vertexes, figure_vertexes):
     to_draw = []
     for s in segments:
         intersections = find_intersections(edges, s)
+        intersections = [0] + intersections + [1]
         intersections = [(intersections[j], intersections[j + 1]) for j in range(0, len(intersections) - 1, 2)]
         print("Before overlapping: ")
         print(intersections)
