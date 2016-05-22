@@ -123,6 +123,7 @@ def dot_product(v1, v2):
     return x1 * x2 + y1 * y2
 
 
+# косое произведение векторов v1v2 и v1v3
 def skew_product(v1, v2, v3):
     x1, y1 = v1
     x2, y2 = v2
@@ -160,13 +161,14 @@ def find_intersections(edges, segment):
 
         ts.append(t)
 
+    ts = sorted(ts)
     print("ts:")
     print(ts)
-    print(sorted(ts))
 
-    return sorted(ts)
+    return ts
 
 
+# пересечение двух числовых отрезков, представленных как кортежи
 def get_overlap(i1, i2):
     if i1[1] < i2[0] or i2[1] < i1[0]:
         return None
@@ -194,6 +196,7 @@ def compute_clipping(segments_vertexes, figure_vertexes):
     return to_draw
 
 
+# p = p1 + (p1 - p1) * t
 def p(p1, p2, t):
     x1, y1, = p1
     x2, y2 = tuple(map(lambda x: x * t, create_vector(p1, p2)))
