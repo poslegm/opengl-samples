@@ -123,8 +123,15 @@ def dot_product(v1, v2):
     return x1 * x2 + y1 * y2
 
 
+def skew_product(v1, v2, v3):
+    x1, y1 = v1
+    x2, y2 = v2
+    x3, y3 = v3
+    return (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1)
+
+
+# поиск пересечений алгоритмом параметрического отсечения с упорядочиванием точек пересечения
 def find_intersections(edges, segment):
-    t_enter_max, t_leave_min = None, None
     ts = []
 
     for edge in edges:
@@ -133,24 +140,29 @@ def find_intersections(edges, segment):
 
         normal = (y2 - y1, x1 - x2)
 
-        p0 = segment[0]
-        p1 = segment[1]
+        p0, p1 = segment[0], segment[1]
 
-        n = - dot_product(create_vector(v0, p0), normal)
-        d = dot_product(create_vector(p0, p1), normal)
-
-        if d == 0 and n < 0:  # TODO если параллельно и лежит снаружи, всё равно отрисовывать!
-            return []
-        elif d == 0 and n >= 0:
+        # если косые произведения векторов от обоих концов отрезка и ребра имеет одинаковый
+        # знак, то обе вершины лежат по одну сторону от ребра => пересечений с ним нет
+        if skew_product(p0, p1, v0) * skew_product(p0, p1, v1) > 0:
             continue
 
+        n = dot_product(create_vector(v0, p0), normal)
+        d = dot_product(create_vector(p0, p1), normal)
+
         # если d == 0, то они параллельны
-        t = n / d
+        if d == 0:
+            continue
+
+        t = - n / d
+
+        print((edge, p(p0, p1, t), d < 0))
+
         ts.append(t)
-        if d < 0:
-            t_enter_max = max(t, t_enter_max) if t_enter_max is not None else t
-        else:
-            t_leave_min = min(t, t_leave_min) if t_leave_min is not None else t
+
+    print("ts:")
+    print(ts)
+    print(sorted(ts))
 
     return sorted(ts)
 
@@ -169,10 +181,14 @@ def compute_clipping(segments_vertexes, figure_vertexes):
     for s in segments:
         intersections = find_intersections(edges, s)
         intersections = [(intersections[j], intersections[j + 1]) for j in range(0, len(intersections) - 1, 2)]
+        print("Before overlapping: ")
         print(intersections)
         intersections = [get_overlap(t, (0, 1)) for t in intersections if get_overlap(t, (0, 1)) is not None]
+        print("After overlapping: ")
         print(intersections)
         intersections = [(p(s[0], s[1], t1), p(s[0], s[1], t2)) for t1, t2 in intersections]
+        print("To draw: ")
+        print(intersections)
         to_draw += intersections
     return to_draw
 
