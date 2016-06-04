@@ -81,6 +81,10 @@ def make_projection(is_isometric):
     glMatrixMode(GL_MODELVIEW)
 
 
+def paint_material(color):
+    glColor3f(*color)
+
+
 def main():
     global fill
     global rotate_x
@@ -137,12 +141,11 @@ def main():
     while not glfw.window_should_close(window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-
         make_projection(isometric)
 
         if draw_cube:
-            big_cube.draw(shift, fill, scale, rotate_x, rotate_y, rotate_z)
-            small_cube.draw([0.0, 0.0], fill)
+            big_cube.draw(shift, fill, paint_material, scale, rotate_x, rotate_y, rotate_z)
+            small_cube.draw([0.0, 0.0], fill, paint_material)
         else:
             glColor3f(*color)
             surface.change_segments_count(segmentsCount)

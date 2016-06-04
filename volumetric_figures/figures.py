@@ -6,8 +6,8 @@ class Cube:
     __sides = ((0, 1, 2, 3), (3, 2, 7, 6), (6, 7, 5, 4),
                (4, 5, 1, 0), (1, 5, 7, 2), (4, 0, 3, 6))
 
-    __colors = ((0, 0, 1, 1), (0, 1, 1, 1), (1, 1, 1, 1),
-                (1, 1, 0, 1), (1, 0, 0, 1), (1, 0, 1, 1))
+    __colors = ((0, 0, 1), (0, 1, 1), (1, 1, 1),
+                (1, 1, 0), (1, 0, 0), (1, 0, 1))
 
     __line_color = (0.3, 0.6, 0.5)
 
@@ -21,7 +21,7 @@ class Cube:
             (-coord, -coord, coord), (-coord, coord, coord)
         )
 
-    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0):
+    def draw(self, shift, fill, paint_function, scale=1.0, angle_x=0, angle_y=0, angle_z=0):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -42,9 +42,9 @@ class Cube:
         glBegin(GL_QUADS)
         for i in range(len(self.__sides)):
             if fill:
-                glColor4f(*self.__colors[i])
+                paint_function(self.__colors[i])
             else:
-                glColor3f(*self.__line_color)
+                paint_function(self.__line_color)
 
             for vertex in self.__sides[i]:
                 glVertex3f(*self.__vertices[vertex])

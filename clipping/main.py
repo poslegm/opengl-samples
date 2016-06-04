@@ -233,6 +233,7 @@ def main():
         elif Globals.mode == 2:
             draw_lines(Globals.clip_polygon_vertexes, Globals.default_color, Globals.complete)
             draw_segments(Globals.segments_vertexes, Globals.default_color)
+        # закрашивание отсечённых отрезков
         elif Globals.mode == 3:
             draw_lines(Globals.clip_polygon_vertexes, Globals.default_color, Globals.complete)
             draw_segments(Globals.segments_vertexes, Globals.default_color)
