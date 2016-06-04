@@ -92,6 +92,11 @@ class SurfaceOfRevolution:
         self.__segments_count = segments_count
         self.__compute_grid(segments_count)
 
+    def change_line(self, vertices):
+        if vertices != self.__vertices:
+            self.__vertices = vertices
+            self.__compute_grid(self.__segments_count)
+
     def change_segments_count(self, segments_count):
         if segments_count != self.__segments_count:
             self.__segments_count = segments_count

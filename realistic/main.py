@@ -19,7 +19,9 @@ class Globals:
     ambient_colors = [(i, i, i, 1) for i in np.arange(0, 1, 0.2)]
     __current_ambient_color_index = 0
     light_model_local_viewer = False
-    light_model_two_side = True
+    light_model_two_side = False
+    to_cylinder = False
+    tween = 0
 
     @staticmethod
     def current_ambient_color():
@@ -88,6 +90,8 @@ def key_callback(window, key, scancode, action, mods):
         Globals.change_viewer()
     elif key == glfw.KEY_T and action == glfw.PRESS:
         Globals.change_two_side()
+    elif key == glfw.KEY_ENTER and action == glfw.PRESS:
+        Globals.to_cylinder = not Globals.to_cylinder
 
 
 def resize_callback(window, width, height):
@@ -118,7 +122,61 @@ def paint_material(color):
     GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_AMBIENT_AND_DIFFUSE, color)
 
 
-def main():
+# вычисление координат для квадратичной твининг-анимации
+def quadratic_tween(t, q, r, s):
+    return ((1 - t) ** 2) * q + (2 * t * (1 - t)) * r + (t ** 2) * s
+
+
+def transform_coordinates(t, q, r, s):
+    if len(q) != len(r) or len(q) != len(s):
+        print("Error in transform_coordinates: coordinates tuples' lengths not equal")
+        return ()
+
+    return tuple(quadratic_tween(t, q[i], r[i], s[i]) for i in range(len(q)))
+
+
+# вычисление текущей кривой для твининг-анимации
+def transform_line(tween, start_line, middle_line, end_line):
+    if len(start_line) != len(middle_line) or len(start_line) != len(end_line):
+        print("Error in transform_line: lines' lengths not equal")
+        return ()
+
+    return tuple(
+        transform_coordinates(tween, start_line[i], middle_line[i], end_line[i])
+        for i in range(len(start_line))
+    )
+
+
+line = (
+    (0.0, 0.65, 0.0),
+    (0.2, 0.4, 0.0),
+    (0.05, 0.4, 0.0),
+    (0.35, 0.0, 0.0),
+    (0.08, 0.0, 0.0),
+    (0.08, -0.15, 0.0),
+    (0.0, -0.15, 0.0)
+)
+middle_line = (
+    (0.0, 0.65, 0.0),
+    (0.2, 0.525, 0.0),
+    (0.125, 0.525, 0.0),
+    (0.275, 0.0, 0.0),
+    (0.14, 0.0, 0.0),
+    (0.14, -0.15, 0.0),
+    (0.1, -0.15, 0.0)
+)
+end_line = (
+    (0.0, 0.65, 0.0),
+    (0.2, 0.65, 0.0),
+    (0.2, 0.65, 0.0),
+    (0.2, 0.0, 0.0),
+    (0.2, 0.0, 0.0),
+    (0.2, -0.15, 0.0),
+    (0.2, -0.15, 0.0)
+)
+
+
+def init(light_source_position):
     if not glfw.init():
         print("GLFW not initialized")
         return
@@ -130,8 +188,6 @@ def main():
         return
 
     glfw.make_context_current(window)
-    color = (0.0, 0.6, 0.1)
-    light_source_position = (1, 1, 1, 0)
 
     GL.glEnable(GL.GL_DEPTH_TEST)
     GL.glDepthFunc(GL.GL_LESS)
@@ -150,21 +206,32 @@ def main():
     glfw.set_key_callback(window, key_callback)
     glfw.set_framebuffer_size_callback(window, resize_callback)
 
+    return window
+
+
+def main():
+    light_source_position = (1, 1, 1, 0)
+
+    window = init(light_source_position)
+
     big_cube = Cube([0.0, 0.0, 0.0], 0.6)
     small_cube = Cube([0.8, 0.8, 0.0], 0.1)
 
-    line = (
-        (0.0, 0.65, 0.0),
-        (0.2, 0.4, 0.0),
-        (0.05, 0.4, 0.0),
-        (0.35, 0.0, 0.0),
-        (0.08, 0.0, 0.0),
-        (0.08, -0.15, 0.0),
-        (0.0, -0.15, 0.0)
-    )
+    surface_color = (0.0, 0.6, 0.1)
     surface = SurfaceOfRevolution(line, [0.0, 0.0, 0.0])
 
+    deltat = 0.01
+    current_line = line
+
     while not glfw.window_should_close(window):
+        # изменение параметра для анимации
+        if Globals.to_cylinder and Globals.tween < 1:
+            Globals.tween += deltat
+            current_line = transform_line(Globals.tween, line, middle_line, end_line)
+        elif not Globals.to_cylinder and Globals.tween > 0:
+            Globals.tween -= deltat
+            current_line = transform_line(Globals.tween, line, middle_line, end_line)
+
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
         make_projection(Globals.isometric)
@@ -175,7 +242,8 @@ def main():
                 Globals.rotate_x, Globals.rotate_y, Globals.rotate_z)
             small_cube.draw([0.0, 0.0], Globals.fill, paint_material)
         else:
-            paint_material(color)
+            surface.change_line(current_line)
+            paint_material(surface_color)
             surface.change_segments_count(Globals.segmentsCount)
             surface.draw(
                 Globals.shift, Globals.fill, Globals.scale,
