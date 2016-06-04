@@ -1,5 +1,6 @@
 import glfw
 import math
+import numpy as np
 import OpenGL.GL as GL
 from volumetric_figures.figures import Cube
 from volumetric_figures.figures import SurfaceOfRevolution
@@ -15,6 +16,30 @@ class Globals:
     segmentsCount = 40
     draw_cube = True
     isometric = False
+    ambient_colors = [(i, i, i, 1) for i in np.arange(0, 1, 0.2)]
+    __current_ambient_color_index = 0
+    light_model_local_viewer = False
+    light_model_two_side = True
+
+    @staticmethod
+    def current_ambient_color():
+        return Globals.ambient_colors[Globals.__current_ambient_color_index]
+
+    @staticmethod
+    def next_ambient_color():
+        Globals.__current_ambient_color_index = (Globals.__current_ambient_color_index + 1) % len(
+            Globals.ambient_colors)
+        GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, Globals.current_ambient_color())
+
+    @staticmethod
+    def change_viewer():
+        Globals.light_model_local_viewer = not Globals.light_model_local_viewer
+        GL.glLightModelfv(GL.GL_LIGHT_MODEL_LOCAL_VIEWER, Globals.light_model_local_viewer)
+
+    @staticmethod
+    def change_two_side():
+        Globals.light_model_two_side = not Globals.light_model_two_side
+        GL.glLightModelfv(GL.GL_LIGHT_MODEL_TWO_SIDE, Globals.light_model_two_side)
 
 
 def key_callback(window, key, scancode, action, mods):
@@ -57,6 +82,12 @@ def key_callback(window, key, scancode, action, mods):
         Globals.draw_cube = not Globals.draw_cube
     elif key == glfw.KEY_P and action == glfw.PRESS:
         Globals.isometric = not Globals.isometric
+    elif key == glfw.KEY_APOSTROPHE and action == glfw.PRESS:
+        Globals.next_ambient_color()
+    elif key == glfw.KEY_V and action == glfw.PRESS:
+        Globals.change_viewer()
+    elif key == glfw.KEY_T and action == glfw.PRESS:
+        Globals.change_two_side()
 
 
 def resize_callback(window, width, height):
@@ -112,9 +143,9 @@ def main():
     GL.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_source_position)
     GL.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, (1, 1, 1, 1))
     # параметры глобальной модели
-    GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, (0.8, 0.8, 0.8, 1))
-    GL.glLightModelfv(GL.GL_LIGHT_MODEL_LOCAL_VIEWER, GL.GL_FALSE)
-    GL.glLightModelfv(GL.GL_LIGHT_MODEL_TWO_SIDE, GL.GL_TRUE)
+    GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, Globals.current_ambient_color())
+    GL.glLightModelfv(GL.GL_LIGHT_MODEL_LOCAL_VIEWER, Globals.light_model_two_side)
+    GL.glLightModelfv(GL.GL_LIGHT_MODEL_TWO_SIDE, Globals.light_model_two_side)
 
     glfw.set_key_callback(window, key_callback)
     glfw.set_framebuffer_size_callback(window, resize_callback)
@@ -144,7 +175,7 @@ def main():
                 Globals.rotate_x, Globals.rotate_y, Globals.rotate_z)
             small_cube.draw([0.0, 0.0], Globals.fill, paint_material)
         else:
-            GL.glColor3f(*color)
+            paint_material(color)
             surface.change_segments_count(Globals.segmentsCount)
             surface.draw(
                 Globals.shift, Globals.fill, Globals.scale,

@@ -147,7 +147,7 @@ def main():
             big_cube.draw(shift, fill, paint_material, scale, rotate_x, rotate_y, rotate_z)
             small_cube.draw([0.0, 0.0], fill, paint_material)
         else:
-            glColor3f(*color)
+            paint_material(color)
             surface.change_segments_count(segmentsCount)
             surface.draw(shift, fill, scale, rotate_x, rotate_y, rotate_z)
 
