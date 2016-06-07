@@ -18,7 +18,6 @@ class Globals:
     scale = 1.0
     shift = [0.0, 0.0]
     segments_count = 40
-    draw_cube = True
     isometric = False
     ambient_colors = [(i, i, i, 1) for i in np.arange(0, 1, 0.2)]
     __current_ambient_color_index = 3
@@ -85,8 +84,6 @@ def key_callback(window, key, scancode, action, mods):
         Globals.segments_count -= dsegments
     elif key == glfw.KEY_M and Globals.segments_count < 100:
         Globals.segments_count += dsegments
-    elif key == glfw.KEY_C and action == glfw.PRESS:
-        Globals.draw_cube = not Globals.draw_cube
     elif key == glfw.KEY_P and action == glfw.PRESS:
         Globals.isometric = not Globals.isometric
     elif key == glfw.KEY_APOSTROPHE and action == glfw.PRESS:
@@ -130,7 +127,7 @@ def make_projection(is_isometric):
 
 
 def paint_material(color):
-    GL.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, color)
+    GL.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, color)
 
 
 # вычисление координат для квадратичной твининг-анимации
@@ -197,7 +194,6 @@ def init(light_source_position):
     # источник света
     GL.glEnable(GL.GL_LIGHTING)
     GL.glEnable(GL.GL_LIGHT0)
-    GL.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, (0, 0, 0, 1))
     GL.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_source_position)
     # параметры глобальной модели
     GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, Globals.current_ambient_color())
@@ -219,7 +215,7 @@ def save_data():
     file = open("dump", 'w')
     keys = (
         "fill", "rotate_x", "rotate_y", "rotate_z", "scale", "_Globals__current_ambient_color_index",
-        "shift", "segments_count", "draw_cube", "isometric", "light_model_local_viewer", "light_model_two_side",
+        "shift", "segments_count", "isometric", "light_model_local_viewer", "light_model_two_side",
         "to_cylinder", "texture", "tween"
     )
     globals_dict = {key: Globals.__dict__[key] for key in keys}
@@ -239,7 +235,6 @@ def load_data():
         Globals.scale = parameters["scale"]
         Globals.shift = parameters["shift"]
         Globals.segments_count = parameters["segments_count"]
-        Globals.draw_cube = parameters["draw_cube"]
         Globals.isometric = parameters["isometric"]
         Globals.__current_ambient_color_index = parameters["_Globals__current_ambient_color_index"]
         Globals.light_model_local_viewer = parameters["light_model_local_viewer"]
@@ -274,7 +269,7 @@ middle_line = (
     (0.275, 0.0, 0.0),
     (0.14, 0.0, 0.0),
     (0.14, -0.15, 0.0),
-    (0.1, -0.15, 0.0)
+    (0.0, -0.15, 0.0)
 )
 end_line = (
     (0.0, 0.65, 0.0),
@@ -283,7 +278,7 @@ end_line = (
     (0.2, 0.0, 0.0),
     (0.2, 0.0, 0.0),
     (0.2, -0.15, 0.0),
-    (0.2, -0.15, 0.0)
+    (0.0, -0.15, 0.0)
 )
 
 
@@ -292,13 +287,10 @@ def main():
 
     window, tex_id = init(light_source_position)
 
-    big_cube = Cube([0.0, 0.0, 0.0], 0.6)
-    small_cube = Cube([0.8, 0.8, 0.0], 0.1)
-
     surface_color = (0.0, 0.6, 0.1)
     surface = SurfaceOfRevolution(line, [0.0, 0.0, 0.0])
 
-    deltat = 0.01
+    deltat = 0.02
     current_line = line
 
     while not glfw.window_should_close(window):
@@ -317,19 +309,14 @@ def main():
         if Globals.texture:
             setup_texture(tex_id)
 
-        if Globals.draw_cube:
-            big_cube.draw(
-                Globals.shift, Globals.fill, paint_material, Globals.scale,
-                Globals.rotate_x, Globals.rotate_y, Globals.rotate_z)
-            small_cube.draw([0.0, 0.0], Globals.fill, paint_material)
-        else:
-            surface.change_line(current_line)
-            surface.change_segments_count(Globals.segments_count)
-            paint_material(surface_color)
-            surface.draw(
-                Globals.shift, Globals.fill, Globals.scale,
-                Globals.rotate_x, Globals.rotate_y, Globals.rotate_z, with_texture=Globals.texture
-            )
+        surface.change_line(current_line)
+        surface.change_segments_count(Globals.segments_count)
+        paint_material(surface_color)
+        surface.draw(
+            Globals.shift, Globals.fill, Globals.scale,
+            Globals.rotate_x, Globals.rotate_y, Globals.rotate_z,
+            with_texture=Globals.texture, with_lightning=True
+        )
 
         # после каждой итерации сдвиг снова становится нулевым до тех пор,
         # пока пользователь не нажмёт кнопку
