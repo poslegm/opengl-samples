@@ -86,25 +86,50 @@ class SurfaceOfRevolution:
 
             i += 1
 
+    # вычисление нормалей нужно для освещения
+    # нормали хранятся в виде одномерного списка координат
+    def __compute_normals(self):
+        self.__normals = []
+        for polygon in self.__grid:
+            p1, p2, p3, _ = polygon
+            self.__normals.extend(self.__create_normal(p1, p2, p3) * 4)
+
+    @staticmethod
+    def __create_normal(a, b, c):
+        v1 = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+        v2 = (c[0] - a[0], c[1] - a[1], c[2] - a[2])
+        return [
+            v1[1] * v2[2] - v1[2] * v2[1],
+            v1[2] * v2[0] - v1[0] * v2[2],
+            v1[0] * v2[1] - v1[1] * v2[0]
+        ]
+
+    def __compute_all(self):
+        self.__compute_grid(self.__segments_count)
+        self.__compute_normals()
+
     def __init__(self, vertices, center, segments_count=40):
         self.__center = center
         self.__vertices = vertices
         self.__segments_count = segments_count
-        self.__compute_grid(segments_count)
+        self.__compute_all()
 
     def change_line(self, vertices):
         if vertices != self.__vertices:
             self.__vertices = vertices
-            self.__compute_grid(self.__segments_count)
+            self.__compute_all()
 
     def change_segments_count(self, segments_count):
         if segments_count != self.__segments_count:
             self.__segments_count = segments_count
-            self.__compute_grid(self.__segments_count)
+            self.__compute_all()
 
     __texture_coordinates = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
 
-    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0, with_texture=False):
+    def draw(
+            self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0,
+            with_texture=False, with_lightning=False
+    ):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -122,14 +147,25 @@ class SurfaceOfRevolution:
         else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
-        for polygon in self.__grid:
-            glBegin(GL_POLYGON)
-            i = 0
-            for v in polygon:
-                if with_texture:
-                    glTexCoord2f(*self.__texture_coordinates[i])
-                    i += 1
-                glVertex3f(*v)
-            glEnd()
+        if with_texture:
+            glEnable(GL_TEXTURE_2D)
+        else:
+            glDisable(GL_TEXTURE_2D)
+
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glEnable(GL_NORMALIZE)
+
+        if with_texture:
+            glTexCoordPointer(2, GL_FLOAT, 0, self.__texture_coordinates * len(self.__grid))
+        if with_lightning:
+            glNormalPointer(GL_FLOAT, 0, self.__normals)
+        glVertexPointer(3, GL_FLOAT, 0, self.__grid)
+        glDrawArrays(GL_QUADS, 0, int(len(self.__grid) * 4))
+
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
 
         glPopMatrix()
