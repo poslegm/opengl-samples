@@ -1,4 +1,4 @@
-from OpenGL.GL import *
+import OpenGL.GL as GL
 import math
 
 
@@ -25,21 +25,21 @@ class Cube:
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
-        glLoadIdentity()
-        glPushMatrix()
+        GL.glLoadIdentity()
+        GL.glPushMatrix()
 
-        glTranslatef(*self.__center)
-        glScalef(scale, scale, scale)
-        glRotatef(angle_x, 1, 0, 0)
-        glRotatef(angle_y, 0, 1, 0)
-        glRotatef(angle_z, 0, 0, 1)
+        GL.glTranslatef(*self.__center)
+        GL.glScalef(scale, scale, scale)
+        GL.glRotatef(angle_x, 1, 0, 0)
+        GL.glRotatef(angle_y, 0, 1, 0)
+        GL.glRotatef(angle_z, 0, 0, 1)
 
         if fill:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL)
         else:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE)
 
-        glBegin(GL_QUADS)
+        GL.glBegin(GL.GL_QUADS)
         for i in range(len(self.__sides)):
             if fill:
                 paint_function(self.__colors[i])
@@ -47,10 +47,10 @@ class Cube:
                 paint_function(self.__line_color)
 
             for vertex in self.__sides[i]:
-                glVertex3f(*self.__vertices[vertex])
-        glEnd()
+                GL.glVertex3f(*self.__vertices[vertex])
+        GL.glEnd()
 
-        glPopMatrix()
+        GL.glPopMatrix()
 
 
 class SurfaceOfRevolution:
@@ -133,39 +133,39 @@ class SurfaceOfRevolution:
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
-        glLoadIdentity()
-        glPushMatrix()
+        GL.glLoadIdentity()
+        GL.glPushMatrix()
 
-        glTranslatef(*self.__center)
-        glScalef(scale, scale, scale)
-        glRotatef(angle_x, 1, 0, 0)
-        glRotatef(angle_y, 0, 1, 0)
-        glRotatef(angle_z, 0, 0, 1)
+        GL.glTranslatef(*self.__center)
+        GL.glScalef(scale, scale, scale)
+        GL.glRotatef(angle_x, 1, 0, 0)
+        GL.glRotatef(angle_y, 0, 1, 0)
+        GL.glRotatef(angle_z, 0, 0, 1)
 
         if fill:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL)
         else:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE)
 
         if with_texture:
-            glEnable(GL_TEXTURE_2D)
+            GL.glEnable(GL.GL_TEXTURE_2D)
         else:
-            glDisable(GL_TEXTURE_2D)
+            GL.glDisable(GL.GL_TEXTURE_2D)
 
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-        glEnableClientState(GL_NORMAL_ARRAY)
-        glEnable(GL_NORMALIZE)
+        GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
+        GL.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY)
+        GL.glEnableClientState(GL.GL_NORMAL_ARRAY)
+        GL.glEnable(GL.GL_NORMALIZE)
 
         if with_texture:
-            glTexCoordPointer(2, GL_FLOAT, 0, self.__texture_coordinates * len(self.__grid))
+            GL.glTexCoordPointer(2, GL.GL_FLOAT, 0, self.__texture_coordinates * len(self.__grid))
         if with_lightning:
-            glNormalPointer(GL_FLOAT, 0, self.__normals)
-        glVertexPointer(3, GL_FLOAT, 0, self.__grid)
-        glDrawArrays(GL_QUADS, 0, int(len(self.__grid) * 4))
+            GL.glNormalPointer(GL.GL_FLOAT, 0, self.__normals)
+        GL.glVertexPointer(3, GL.GL_FLOAT, 0, self.__grid)
+        GL.glDrawArrays(GL.GL_QUADS, 0, int(len(self.__grid) * 4))
 
-        glDisableClientState(GL_VERTEX_ARRAY)
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
-        glDisableClientState(GL_NORMAL_ARRAY)
+        GL.glDisableClientState(GL.GL_VERTEX_ARRAY)
+        GL.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY)
+        GL.glDisableClientState(GL.GL_NORMAL_ARRAY)
 
-        glPopMatrix()
+        GL.glPopMatrix()

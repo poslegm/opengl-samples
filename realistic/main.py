@@ -6,7 +6,6 @@ import glfw
 import numpy as np
 from PIL import Image
 
-from volumetric_figures.figures import Cube
 from volumetric_figures.figures import SurfaceOfRevolution
 
 
@@ -127,7 +126,7 @@ def make_projection(is_isometric):
 
 
 def paint_material(color):
-    GL.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, color)
+    GL.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT_AND_DIFFUSE, color)
 
 
 # вычисление координат для квадратичной твининг-анимации
@@ -283,7 +282,7 @@ end_line = (
 
 
 def main():
-    light_source_position = (1, 1, 1, 1)
+    light_source_position = (1, 1, 1, 0)
 
     window, tex_id = init(light_source_position)
 
