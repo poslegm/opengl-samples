@@ -1,7 +1,11 @@
-import glfw
+import json
 import math
-import numpy as np
+
 import OpenGL.GL as GL
+import glfw
+import numpy as np
+from PIL import Image
+
 from volumetric_figures.figures import Cube
 from volumetric_figures.figures import SurfaceOfRevolution
 
@@ -13,14 +17,15 @@ class Globals:
     rotate_z = 0
     scale = 1.0
     shift = [0.0, 0.0]
-    segmentsCount = 40
+    segments_count = 40
     draw_cube = True
     isometric = False
     ambient_colors = [(i, i, i, 1) for i in np.arange(0, 1, 0.2)]
-    __current_ambient_color_index = 0
+    __current_ambient_color_index = 3
     light_model_local_viewer = False
     light_model_two_side = False
     to_cylinder = False
+    texture = True
     tween = 0
 
     @staticmethod
@@ -76,10 +81,10 @@ def key_callback(window, key, scancode, action, mods):
         Globals.shift[0] += dshift
     elif key == glfw.KEY_A:
         Globals.shift[0] -= dshift
-    elif key == glfw.KEY_L and Globals.segmentsCount > 5:
-        Globals.segmentsCount -= dsegments
-    elif key == glfw.KEY_M and Globals.segmentsCount < 100:
-        Globals.segmentsCount += dsegments
+    elif key == glfw.KEY_L and Globals.segments_count > 5:
+        Globals.segments_count -= dsegments
+    elif key == glfw.KEY_M and Globals.segments_count < 100:
+        Globals.segments_count += dsegments
     elif key == glfw.KEY_C and action == glfw.PRESS:
         Globals.draw_cube = not Globals.draw_cube
     elif key == glfw.KEY_P and action == glfw.PRESS:
@@ -92,6 +97,12 @@ def key_callback(window, key, scancode, action, mods):
         Globals.change_two_side()
     elif key == glfw.KEY_ENTER and action == glfw.PRESS:
         Globals.to_cylinder = not Globals.to_cylinder
+    elif key == glfw.KEY_O and action == glfw.PRESS:
+        Globals.texture = not Globals.texture
+    elif key == glfw.KEY_1 and action == glfw.PRESS:
+        save_data()
+    elif key == glfw.KEY_2 and action == glfw.PRESS:
+        load_data()
 
 
 def resize_callback(window, width, height):
@@ -119,7 +130,7 @@ def make_projection(is_isometric):
 
 
 def paint_material(color):
-    GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_AMBIENT_AND_DIFFUSE, color)
+    GL.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, color)
 
 
 # вычисление координат для квадратичной твининг-анимации
@@ -145,6 +156,106 @@ def transform_line(tween, start_line, middle_line, end_line):
         transform_coordinates(tween, start_line[i], middle_line[i], end_line[i])
         for i in range(len(start_line))
     )
+
+
+def load_image(image_name):
+    im = Image.open(image_name)
+    try:
+        ix, iy, image = im.size[0], im.size[1], im.tobytes("raw", "RGBA", 0, -1)
+    except SystemError:
+        ix, iy, image = im.size[0], im.size[1], im.tobytes("raw", "RGBX", 0, -1)
+
+    texture_id = GL.glGenTextures(1)
+
+    GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id)
+    GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+    GL.glTexImage2D(
+        GL.GL_TEXTURE_2D, 0, 3, ix, iy, 0,
+        GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, image
+    )
+
+    return texture_id
+
+
+def init(light_source_position):
+    if not glfw.init():
+        print("GLFW not initialized")
+        return
+
+    window = glfw.create_window(640, 640, "Cubes", None, None)
+    if not window:
+        print("Window not created")
+        glfw.terminate()
+        return
+
+    glfw.make_context_current(window)
+
+    GL.glEnable(GL.GL_DEPTH_TEST)
+    GL.glDepthFunc(GL.GL_LESS)
+
+    GL.glEnable(GL.GL_NORMALIZE)
+    # источник света
+    GL.glEnable(GL.GL_LIGHTING)
+    GL.glEnable(GL.GL_LIGHT0)
+    GL.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, (0, 0, 0, 1))
+    GL.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_source_position)
+    # параметры глобальной модели
+    GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, Globals.current_ambient_color())
+    GL.glLightModelfv(GL.GL_LIGHT_MODEL_LOCAL_VIEWER, Globals.light_model_two_side)
+    GL.glLightModelfv(GL.GL_LIGHT_MODEL_TWO_SIDE, Globals.light_model_two_side)
+
+    glfw.set_key_callback(window, key_callback)
+    glfw.set_framebuffer_size_callback(window, resize_callback)
+
+    # параметры текстуры
+    GL.glEnable(GL.GL_TEXTURE_2D)
+    GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE)
+    tex_id = load_image("tree-tex.bmp")
+
+    return window, tex_id
+
+
+def save_data():
+    file = open("dump", 'w')
+    keys = (
+        "fill", "rotate_x", "rotate_y", "rotate_z", "scale", "_Globals__current_ambient_color_index",
+        "shift", "segments_count", "draw_cube", "isometric", "light_model_local_viewer", "light_model_two_side",
+        "to_cylinder", "texture", "tween"
+    )
+    globals_dict = {key: Globals.__dict__[key] for key in keys}
+    file.write(json.dumps(globals_dict))
+    file.close()
+    print("Данные сохранены")
+
+
+def load_data():
+    try:
+        file = open("dump", 'r')
+        parameters = json.loads(file.read())
+        Globals.fill = parameters["fill"]
+        Globals.rotate_x = parameters["rotate_x"]
+        Globals.rotate_y = parameters["rotate_y"]
+        Globals.rotate_z = parameters["rotate_z"]
+        Globals.scale = parameters["scale"]
+        Globals.shift = parameters["shift"]
+        Globals.segments_count = parameters["segments_count"]
+        Globals.draw_cube = parameters["draw_cube"]
+        Globals.isometric = parameters["isometric"]
+        Globals.__current_ambient_color_index = parameters["_Globals__current_ambient_color_index"]
+        Globals.light_model_local_viewer = parameters["light_model_local_viewer"]
+        Globals.light_model_two_side = parameters["light_model_two_side"]
+        Globals.to_cylinder = parameters["to_cylinder"]
+        Globals.texture = parameters["texture"]
+        Globals.tween = parameters["tween"]
+    except IOError:
+        print("Ошибка при чтении файла")
+
+
+# TODO вычислять нормали
+def setup_texture(tex_id):
+    GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
+    GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
+    GL.glBindTexture(GL.GL_TEXTURE_2D, tex_id)
 
 
 line = (
@@ -176,43 +287,10 @@ end_line = (
 )
 
 
-def init(light_source_position):
-    if not glfw.init():
-        print("GLFW not initialized")
-        return
-
-    window = glfw.create_window(640, 640, "Cubes", None, None)
-    if not window:
-        print("Window not created")
-        glfw.terminate()
-        return
-
-    glfw.make_context_current(window)
-
-    GL.glEnable(GL.GL_DEPTH_TEST)
-    GL.glDepthFunc(GL.GL_LESS)
-
-    GL.glEnable(GL.GL_LIGHTING)
-    GL.glEnable(GL.GL_NORMALIZE)
-    # источник света
-    GL.glEnable(GL.GL_LIGHT0)
-    GL.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_source_position)
-    GL.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, (1, 1, 1, 1))
-    # параметры глобальной модели
-    GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, Globals.current_ambient_color())
-    GL.glLightModelfv(GL.GL_LIGHT_MODEL_LOCAL_VIEWER, Globals.light_model_two_side)
-    GL.glLightModelfv(GL.GL_LIGHT_MODEL_TWO_SIDE, Globals.light_model_two_side)
-
-    glfw.set_key_callback(window, key_callback)
-    glfw.set_framebuffer_size_callback(window, resize_callback)
-
-    return window
-
-
 def main():
-    light_source_position = (1, 1, 1, 0)
+    light_source_position = (1, 1, 1, 1)
 
-    window = init(light_source_position)
+    window, tex_id = init(light_source_position)
 
     big_cube = Cube([0.0, 0.0, 0.0], 0.6)
     small_cube = Cube([0.8, 0.8, 0.0], 0.1)
@@ -236,6 +314,9 @@ def main():
 
         make_projection(Globals.isometric)
 
+        if Globals.texture:
+            setup_texture(tex_id)
+
         if Globals.draw_cube:
             big_cube.draw(
                 Globals.shift, Globals.fill, paint_material, Globals.scale,
@@ -243,11 +324,11 @@ def main():
             small_cube.draw([0.0, 0.0], Globals.fill, paint_material)
         else:
             surface.change_line(current_line)
+            surface.change_segments_count(Globals.segments_count)
             paint_material(surface_color)
-            surface.change_segments_count(Globals.segmentsCount)
             surface.draw(
                 Globals.shift, Globals.fill, Globals.scale,
-                Globals.rotate_x, Globals.rotate_y, Globals.rotate_z
+                Globals.rotate_x, Globals.rotate_y, Globals.rotate_z, with_texture=Globals.texture
             )
 
         # после каждой итерации сдвиг снова становится нулевым до тех пор,

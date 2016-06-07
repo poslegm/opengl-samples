@@ -102,7 +102,9 @@ class SurfaceOfRevolution:
             self.__segments_count = segments_count
             self.__compute_grid(self.__segments_count)
 
-    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0):
+    __texture_coordinates = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
+
+    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0, with_texture=False):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -122,7 +124,11 @@ class SurfaceOfRevolution:
 
         for polygon in self.__grid:
             glBegin(GL_POLYGON)
+            i = 0
             for v in polygon:
+                if with_texture:
+                    glTexCoord2f(*self.__texture_coordinates[i])
+                    i += 1
                 glVertex3f(*v)
             glEnd()
 
