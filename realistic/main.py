@@ -205,9 +205,10 @@ def init(light_source_position):
     # параметры текстуры
     GL.glEnable(GL.GL_TEXTURE_2D)
     GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE)
-    tex_id = load_image("tree-tex.bmp")
+    load_image("tree-tex.bmp")
+    setup_texture()
 
-    return window, tex_id
+    return window
 
 
 def save_data():
@@ -245,11 +246,9 @@ def load_data():
         print("Ошибка при чтении файла")
 
 
-# TODO вычислять нормали
-def setup_texture(tex_id):
+def setup_texture():
     GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
     GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
-    GL.glBindTexture(GL.GL_TEXTURE_2D, tex_id)
 
 
 line = (
@@ -284,7 +283,7 @@ end_line = (
 def main():
     light_source_position = (1, 1, 1, 0)
 
-    window, tex_id = init(light_source_position)
+    window = init(light_source_position)
 
     surface_color = (0.0, 0.6, 0.1)
     surface = SurfaceOfRevolution(line, [0.0, 0.0, 0.0])
@@ -304,9 +303,6 @@ def main():
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
         make_projection(Globals.isometric)
-
-        if Globals.texture:
-            setup_texture(tex_id)
 
         surface.change_line(current_line)
         surface.change_segments_count(Globals.segments_count)

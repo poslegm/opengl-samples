@@ -155,7 +155,6 @@ class SurfaceOfRevolution:
         GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
         GL.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY)
         GL.glEnableClientState(GL.GL_NORMAL_ARRAY)
-        GL.glEnable(GL.GL_NORMALIZE)
 
         if with_texture:
             GL.glTexCoordPointer(2, GL.GL_FLOAT, 0, self.__texture_coordinates * len(self.__grid))
