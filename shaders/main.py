@@ -18,40 +18,14 @@ class Globals:
     shift = [0.0, 0.0]
     segments_count = 40
     isometric = False
-    ambient_colors = [(i, i, i, 1) for i in np.arange(0, 1, 0.2)]
-    __current_ambient_color_index = 3
-    light_model_local_viewer = False
-    light_model_two_side = False
     to_cylinder = False
     with_texture = True
     tween = 0
-    projection_matrix = np.identity(4, 'float32')
+    projection_matrix = np.identity(4, np.float32)
     projection_matrix_id = 0
     modification_matrix_id = 0
     surface_color_id = 0
     position_id = 0
-    texture_id = 0
-    tex_unit_id = 0
-
-    @staticmethod
-    def current_ambient_color():
-        return Globals.ambient_colors[Globals.__current_ambient_color_index]
-
-    @staticmethod
-    def next_ambient_color():
-        Globals.__current_ambient_color_index = (Globals.__current_ambient_color_index + 1) % len(
-            Globals.ambient_colors)
-        GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, Globals.current_ambient_color())
-
-    @staticmethod
-    def change_viewer():
-        Globals.light_model_local_viewer = not Globals.light_model_local_viewer
-        GL.glLightModelfv(GL.GL_LIGHT_MODEL_LOCAL_VIEWER, Globals.light_model_local_viewer)
-
-    @staticmethod
-    def change_two_side():
-        Globals.light_model_two_side = not Globals.light_model_two_side
-        GL.glLightModelfv(GL.GL_LIGHT_MODEL_TWO_SIDE, Globals.light_model_two_side)
 
 
 def key_callback(window, key, scancode, action, mods):
@@ -92,16 +66,8 @@ def key_callback(window, key, scancode, action, mods):
         Globals.segments_count += dsegments
     elif key == glfw.KEY_P and action == glfw.PRESS:
         Globals.isometric = not Globals.isometric
-    elif key == glfw.KEY_APOSTROPHE and action == glfw.PRESS:
-        Globals.next_ambient_color()
-    elif key == glfw.KEY_V and action == glfw.PRESS:
-        Globals.change_viewer()
-    elif key == glfw.KEY_T and action == glfw.PRESS:
-        Globals.change_two_side()
     elif key == glfw.KEY_ENTER and action == glfw.PRESS:
         Globals.to_cylinder = not Globals.to_cylinder
-    elif key == glfw.KEY_O and action == glfw.PRESS:
-        Globals.with_texture = not Globals.with_texture
     elif key == glfw.KEY_1 and action == glfw.PRESS:
         save_data()
     elif key == glfw.KEY_2 and action == glfw.PRESS:
@@ -127,7 +93,7 @@ def make_projection(is_isometric):
               [0, 1, -l * math.sin(a), 0],
               [0, 0, 1, 0],
               [0, 0, 0, 1]]
-        Globals.projection_matrix = np.matrix(m1) * np.matrix(m2)
+        Globals.projection_matrix = np.matrix(m1).T * np.matrix(m2).T
     else:
         Globals.projection_matrix = np.identity(4, 'float32')
 
@@ -197,15 +163,11 @@ def load_shaders():
     #version 130
 
     attribute vec3 position;
-    attribute vec2 texture_coord;
 
     uniform mat4 projection_matrix;
     uniform mat4 modification_matrix;
 
-    out vec2 tex_coord;
-
     void main(){
-        tex_coord = texture_coord;
         gl_Position = projection_matrix * modification_matrix * vec4(position, 1.0);
     }""")
 
@@ -213,14 +175,10 @@ def load_shaders():
     #version 130
 
     uniform vec4 surface_color;
-    uniform sampler2D tex_unit;
-
-    in vec2 tex_coord;
 
     out vec4 outputColour;
     void main() {
-       // gl_FragColor = surface_color;
-        outputColour = texture(tex_unit, tex_coord);
+        outputColour = surface_color;
     }""")
 
     GL.glAttachShader(program, vertex)
@@ -232,23 +190,18 @@ def load_shaders():
         print(log)
 
     Globals.position_id = GL.glGetAttribLocation(program, "position")
-    Globals.texture_id = GL.glGetAttribLocation(program, "texture_coord")
     Globals.projection_matrix_id = GL.glGetUniformLocation(program, "projection_matrix")
     Globals.modification_matrix_id = GL.glGetUniformLocation(program, "modification_matrix")
     Globals.surface_color_id = GL.glGetUniformLocation(program, "surface_color")
-    Globals.tex_unit_id = GL.glGetUniformLocation(program, "tex_unit")
 
     return program
 
 
-def draw_shader(program, color, mod_matrix, texture):
+def draw_shader(program, color, mod_matrix):
     GL.glUseProgram(program)
     GL.glUniform4f(Globals.surface_color_id, *color)
-    GL.glUniformMatrix4fv(Globals.projection_matrix_id, 1, GL.GL_FALSE, Globals.projection_matrix)
+    GL.glUniformMatrix4fv(Globals.projection_matrix_id, 1, GL.GL_FALSE, Globals.projection_matrix.tolist())
     GL.glUniformMatrix4fv(Globals.modification_matrix_id, 1, GL.GL_FALSE, mod_matrix.tolist())
-    GL.glActiveTexture(GL.GL_TEXTURE0)
-    GL.glBindTexture(GL.GL_TEXTURE_2D, texture)
-    GL.glUniform1i(Globals.tex_unit_id, 0)
 
 
 def init():
@@ -267,33 +220,13 @@ def init():
     GL.glEnable(GL.GL_DEPTH_TEST)
     GL.glDepthFunc(GL.GL_LESS)
 
-    GL.glEnable(GL.GL_NORMALIZE)
-    # источник света
-    # GL.glEnable(GL.GL_LIGHTING)
-    # GL.glEnable(GL.GL_LIGHT0)
-    # GL.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_source_position)
-    # параметры глобальной модели
-    # GL.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, Globals.current_ambient_color())
-    # GL.glLightModelfv(GL.GL_LIGHT_MODEL_LOCAL_VIEWER, Globals.light_model_two_side)
-    # GL.glLightModelfv(GL.GL_LIGHT_MODEL_TWO_SIDE, Globals.light_model_two_side)
-
     glfw.set_key_callback(window, key_callback)
     glfw.set_framebuffer_size_callback(window, resize_callback)
 
     # подключение шейдеров
     program = load_shaders()
 
-    # параметры текстуры
-    GL.glEnable(GL.GL_TEXTURE_2D)
-    GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE)
-    GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
-    GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR)
-    GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
-    GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
-    texture = load_image("tree-tex.bmp")
-    GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
-
-    return window, program, texture
+    return window, program
 
 
 def save_data():
@@ -321,11 +254,7 @@ def load_data():
         Globals.shift = parameters["shift"]
         Globals.segments_count = parameters["segments_count"]
         Globals.isometric = parameters["isometric"]
-        Globals.__current_ambient_color_index = parameters["_Globals__current_ambient_color_index"]
-        Globals.light_model_local_viewer = parameters["light_model_local_viewer"]
-        Globals.light_model_two_side = parameters["light_model_two_side"]
         Globals.to_cylinder = parameters["to_cylinder"]
-        Globals.with_texture = parameters["texture"]
         Globals.tween = parameters["tween"]
     except IOError:
         print("Ошибка при чтении файла")
@@ -362,8 +291,8 @@ end_line = (
 
 def main():
     surface_color = (0.0, 0.6, 0.1, 1.0)
-    window, shader_program, texture = init()
-    surface = SurfaceOfRevolution(line, [0.0, 0.0, 0.0], Globals.position_id, Globals.texture_id)
+    window, shader_program = init()
+    surface = SurfaceOfRevolution(line, [0.0, 0.0, 0.0], Globals.position_id)
 
     deltat = 0.02
     current_line = line
@@ -385,11 +314,10 @@ def main():
         surface.change_segments_count(Globals.segments_count)
         mod_matrix = surface.draw(
             Globals.shift, Globals.fill, Globals.scale,
-            Globals.rotate_x, Globals.rotate_y, Globals.rotate_z,
-            with_texture=True, with_lightning=True
+            Globals.rotate_x, Globals.rotate_y, Globals.rotate_z
         )
 
-        draw_shader(shader_program, surface_color, mod_matrix, texture)
+        draw_shader(shader_program, surface_color, mod_matrix)
 
         # после каждой итерации сдвиг снова становится нулевым до тех пор,
         # пока пользователь не нажмёт кнопку

@@ -37,34 +37,8 @@ class SurfaceOfRevolution:
 
             i += 1
 
-    # вычисление нормалей нужно для освещения
-    # нормали хранятся в виде одномерного списка координат
-    def __compute_normals(self):
-        self.__normals = []
-        for polygon in self.__grid:
-            p1, p2, p3, _ = polygon
-            self.__normals.extend(self.__create_normal(p1, p2, p3) * 4)
-
-    @staticmethod
-    def __create_normal(a, b, c):
-        v1 = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
-        v2 = (c[0] - a[0], c[1] - a[1], c[2] - a[2])
-        return [
-            v1[1] * v2[2] - v1[2] * v2[1],
-            v1[2] * v2[0] - v1[0] * v2[2],
-            v1[0] * v2[1] - v1[1] * v2[0]
-        ]
-
     def __create_vao(self):
-        # print(np.concatenate(self.__grid), len(np.concatenate(self.__grid)))
-        # print(self.__texture_coordinates * len(self.__grid), len(self.__texture_coordinates * len(self.__grid)))
-        grid1 = np.concatenate(self.__grid)
-        tex1 = list(map(list, self.__texture_coordinates * len(self.__grid)))
-        grid_array1 = np.array(np.concatenate(np.array(list(zip(grid1.tolist(), tex1))).flatten()), dtype=np.float32)
-        print(grid_array1)
-
         grid_array = np.array(self.__grid, dtype=np.float32).flatten()
-        textures_array = np.array(self.__texture_coordinates * len(self.__grid), dtype=np.float32).flatten()
 
         vao = GL.glGenVertexArrays(1)
         GL.glBindVertexArray(vao)
@@ -73,29 +47,13 @@ class SurfaceOfRevolution:
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
 
         GL.glEnableVertexAttribArray(self.__position_id)
-        GL.glVertexAttribPointer(self.__position_id, 3, GL.GL_FLOAT, GL.GL_FALSE, 20, ctypes.c_void_p(0))
-        # GL.glVertexAttribPointer(self.__position_id, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(0))
-        # сразу после координат вершин в буфере будут лежать координаты текстуры
-        # поэтому указатель смещается на sizeof(float) * длину массива координат вершин
-        GL.glVertexAttribPointer(
-            self.__texture_id, 2, GL.GL_FLOAT,
-            GL.GL_FALSE, 20, ctypes.c_void_p(12)
-        )
+        GL.glVertexAttribPointer(self.__position_id, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(0))
 
         GL.glBufferData(
-            GL.GL_ARRAY_BUFFER, grid_array1.nbytes,
-            grid_array1, GL.GL_STATIC_DRAW
+            GL.GL_ARRAY_BUFFER, grid_array.nbytes,
+            grid_array, GL.GL_STATIC_DRAW
         )
 
-        # GL.glBufferData(
-        #     GL.GL_ARRAY_BUFFER, grid_array.nbytes,
-        #     grid_array, GL.GL_STATIC_DRAW
-        # )
-
-        # GL.glBufferData(
-        #     GL.GL_ARRAY_BUFFER, grid_array.nbytes + textures_array.nbytes,
-        #     np.concatenate((grid_array, textures_array)), GL.GL_STATIC_DRAW
-        # )
         GL.glBindVertexArray(0)
 
         GL.glDisableVertexAttribArray(self.__position_id)
@@ -105,16 +63,14 @@ class SurfaceOfRevolution:
 
     def __compute_all(self):
         self.__compute_grid(self.__segments_count)
-        self.__compute_normals()
         self.__create_vao()
 
-    def __init__(self, vertices, center, position_id, texture_id, segments_count=40):
+    def __init__(self, vertices, center, position_id, segments_count=40):
         self.__vao = None
         self.__center = center
         self.__vertices = vertices
         self.__segments_count = segments_count
         self.__position_id = position_id
-        self.__texture_id = texture_id
         self.__compute_all()
 
     def change_line(self, vertices):
@@ -126,8 +82,6 @@ class SurfaceOfRevolution:
         if segments_count != self.__segments_count:
             self.__segments_count = segments_count
             self.__compute_all()
-
-    __texture_coordinates = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
 
     @staticmethod
     def __translate(center):
@@ -171,10 +125,7 @@ class SurfaceOfRevolution:
         )
         return rot_x * rot_y * rot_z
 
-    def draw(
-            self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0,
-            with_texture=False, with_lightning=False
-    ):
+    def draw(self, shift, fill, scale=1.0, angle_x=0, angle_y=0, angle_z=0):
         self.__center[0] += shift[0]
         self.__center[1] += shift[1]
 
@@ -187,13 +138,6 @@ class SurfaceOfRevolution:
         else:
             GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE)
 
-        if with_texture:
-            GL.glEnable(GL.GL_TEXTURE_2D)
-        else:
-            GL.glDisable(GL.GL_TEXTURE_2D)
-
-        # if with_lightning:
-        #     GL.glNormalPointer(GL.GL_FLOAT, 0, self.__normals)
         GL.glBindVertexArray(self.__vao)
         GL.glDrawArrays(GL.GL_QUADS, 0, len(self.__grid) * 4)
         GL.glBindVertexArray(0)
