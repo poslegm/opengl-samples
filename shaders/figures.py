@@ -56,6 +56,13 @@ class SurfaceOfRevolution:
         ]
 
     def __create_vao(self):
+        # print(np.concatenate(self.__grid), len(np.concatenate(self.__grid)))
+        # print(self.__texture_coordinates * len(self.__grid), len(self.__texture_coordinates * len(self.__grid)))
+        grid1 = np.concatenate(self.__grid)
+        tex1 = list(map(list, self.__texture_coordinates * len(self.__grid)))
+        grid_array1 = np.array(np.concatenate(np.array(list(zip(grid1.tolist(), tex1))).flatten()), dtype=np.float32)
+        print(grid_array1)
+
         grid_array = np.array(self.__grid, dtype=np.float32).flatten()
         textures_array = np.array(self.__texture_coordinates * len(self.__grid), dtype=np.float32).flatten()
 
@@ -66,18 +73,24 @@ class SurfaceOfRevolution:
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
 
         GL.glEnableVertexAttribArray(self.__position_id)
-        GL.glVertexAttribPointer(self.__position_id, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(0))
+        GL.glVertexAttribPointer(self.__position_id, 3, GL.GL_FLOAT, GL.GL_FALSE, 20, ctypes.c_void_p(0))
+        # GL.glVertexAttribPointer(self.__position_id, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(0))
         # сразу после координат вершин в буфере будут лежать координаты текстуры
         # поэтому указатель смещается на sizeof(float) * длину массива координат вершин
-        # GL.glVertexAttribPointer(
-        #     self.__texture_id, 2, GL.GL_FLOAT,
-        #     GL.GL_FALSE, 0, ctypes.c_void_p(4 * len(grid_array))
-        # )
+        GL.glVertexAttribPointer(
+            self.__texture_id, 2, GL.GL_FLOAT,
+            GL.GL_FALSE, 20, ctypes.c_void_p(12)
+        )
 
         GL.glBufferData(
-            GL.GL_ARRAY_BUFFER, grid_array.nbytes,
-            grid_array, GL.GL_STATIC_DRAW
+            GL.GL_ARRAY_BUFFER, grid_array1.nbytes,
+            grid_array1, GL.GL_STATIC_DRAW
         )
+
+        # GL.glBufferData(
+        #     GL.GL_ARRAY_BUFFER, grid_array.nbytes,
+        #     grid_array, GL.GL_STATIC_DRAW
+        # )
 
         # GL.glBufferData(
         #     GL.GL_ARRAY_BUFFER, grid_array.nbytes + textures_array.nbytes,
