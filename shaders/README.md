@@ -6,3 +6,6 @@
 - C - change figure
 - L, M - change segments count (for surface of rotation only)
 - P - turn on/off horizontal isometric projection
+- Enter for start tweening animation
+- 1 for save scene in dump file
+- 2 for load scene from dump file

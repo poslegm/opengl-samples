@@ -178,7 +178,7 @@ def init(light_source_position):
         print("GLFW not initialized")
         return
 
-    window = glfw.create_window(640, 640, "Cubes", None, None)
+    window = glfw.create_window(640, 640, "Realistic", None, None)
     if not window:
         print("Window not created")
         glfw.terminate()
