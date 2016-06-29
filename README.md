@@ -20,8 +20,8 @@ Elementary program that demonstrates OpenGL initialization and simple animation.
 ### Volumetric Figures
 Draw cube and arbitrary surface of rotation. Program can apply horizontal isometric projection.
 
-<img width=300 src='screenshots/figures1.png'/>
-<img width=300 src='screenshots/figures2.png'/>
+<img height=300 src='screenshots/figures1.png'/>
+<img height=300 src='screenshots/figures2.png'/>
 
 ### Rasterization
 Drawing arbitrary polygon using ```glDrawPixels``` and smoothing with Bresenham's line algorithm.
